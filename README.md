@@ -24,4 +24,12 @@ emscriptenを準備し，emconfigureやemcc等のコマンドにPATHを通し，
 
 renderer.tsに含まれるシェーダによる色空間変換コードは[Broadway]のものを利用しています．
 
+
+ライセンス
+----------
+
+libx264.jsはx264のライセンスに依存するのでGPLv2です．
+libopenh264.jsはopenH264のライセンスに依存するので二条項BSDライセンスです．
+その他の部分はGPLv2ライセンスになります．
+
 [Broadway]: https://github.com/mbebenita/Broadway "Broadway: A JavaScript H.264 decoder."
