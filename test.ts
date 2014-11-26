@@ -86,28 +86,45 @@ class ReadTest {
 
 class EncodeTest {
     reader: VideoReader;
+    eof = false;
     video_info: VideoInfo;
     frame_count = 0;
-
+    encoder: Worker;
     encode_start_time: number;
-
-    x264_handle: number;
-    x264_pic: number;
-    x264_pic_out: number;
-    x264_pic_y: number;
-    x264_pic_u: number;
-    x264_pic_v: number;
-    x264_nal: number;
-    x264_nal_cnt: number;
 
     output: Uint8Array;
     output_filled: number;
     num_payloads = 0;
 
-    constructor(reader: VideoReader) {
+    constructor(reader: VideoReader, encoder: string) {
         this.reader = reader;
+        this.encoder = new Worker(encoder);
         this.output = new Uint8Array (1024 * 1024 * 128);
         this.output_filled = 0;
+
+        this.encoder.onmessage = (ev: MessageEvent) => {
+            var data = <Uint8Array>ev.data;
+            if (data.length == 1) {
+                if (data[0] == 1) {
+                    var encode_time = (Date.now() - this.encode_start_time) / 1000.0;
+                    console.timeEnd('encode-test');
+                    console.log("EOF: " + this.frame_count + " frames");
+                    console.log("size: " + (this.output_filled / 1024) + " KB");
+                    console.log("encode speed = " + (this.frame_count / encode_time) + "fps");
+                    document.getElementById("encstatus").innerHTML =
+                        (this.frame_count / encode_time).toFixed(2)
+                        + "fps, size=" + (this.output_filled / 1024).toFixed(0) + " KB";
+                    var url = URL.createObjectURL(new Blob(
+                        [new DataView(this.output.buffer, this.output.byteOffset, this.output_filled)],
+                        {"type": " application/octet-stream"}));
+                    window.location.assign(url);
+                    return;
+                }
+            } else {
+                this._store_yuv(data);
+            }
+            this._read_frame();
+        };
     }
 
     run(file: File): void {
@@ -123,22 +140,11 @@ class EncodeTest {
     }
 
     _read_frame() {
+        if (this.eof) return;
         var handler = (sender: any, args: ReadEventArgs) => {
             if (args.is_eof) {
-                this._encode_flush();
-                var encode_time = (Date.now() - this.encode_start_time) / 1000.0;
-                _x264_encoder_close (this.x264_handle);
-                console.timeEnd('encode-test');
-                console.log("EOF: " + this.frame_count + " frames");
-                console.log("size: " + (this.output_filled / 1024) + " KB");
-                console.log("encode speed = " + (this.frame_count / encode_time) + "fps");
-                document.getElementById("encstatus").innerHTML =
-                    (this.frame_count / encode_time).toFixed(2)
-                    + "fps, size=" + (this.output_filled / 1024).toFixed(0) + " KB";
-                var url = URL.createObjectURL(new Blob(
-                    [new DataView(this.output.buffer, this.output.byteOffset, this.output_filled)],
-                    {"type": " application/octet-stream"}));
-                window.location.assign(url);
+                this.encoder.postMessage(new Uint8Array(0));
+                this.eof = true;
                 return;
             }
             if (!args.is_success) {
@@ -146,117 +152,57 @@ class EncodeTest {
                 return;
             }
             this.frame_count ++;
-            this._encode_frame(args.y, args.u, args.v);
-            this._read_frame();
+            var yuv = args.yuv;
+            if (!args.yuv_owner) {
+                yuv = new Uint8Array(yuv);
+            }
+            this._encode_frame(yuv);
         };
         this.reader.read(handler);
     }
 
-    x264_param_parse (param: number, name: string, value: string): boolean {
-        var p_name = allocate(intArrayFromString(name), 'i8', ALLOC_NORMAL);
-        var p_value = 0;
-        if (value)
-            p_value = allocate(intArrayFromString(value), 'i8', ALLOC_NORMAL);
-        var ret = _x264_param_parse (param, p_name, p_value);
-        _free (p_name);
-        if (p_value > 0)
-            _free (p_value);
-        return ret == 0;
-    }
-
     _encode_init() {
         var preset = parseInt((<HTMLInputElement>document.getElementById("x264presets")).value);
-        var param = _x264_encoder_param_create(this.video_info.width,
-                                               this.video_info.height,
-                                               this.video_info.fps_num,
-                                               this.video_info.fps_den,
-                                               preset);
-        if (!this.x264_param_parse (param, "ssim", undefined)) {
-            console.log("x264_param_parse: failed (ssim)");
-            throw 'failed';
-        }
-        this.x264_handle = _x264_encoder_open2 (param);
-        if (this.x264_handle == 0) {
-            console.log("x264_encoder_open: failed");
-            throw 'failed';
-        }
-        this.x264_pic = _x264_picture_create ();
-        this.x264_pic_out = _x264_picture_create ();
-        if (this.x264_pic == 0 || this.x264_pic_out == 0) {
-            console.log("x264_picture_create: failed");
-            throw 'failed';
-        }
-        this.x264_pic_y = _malloc(this.video_info.width * this.video_info.height);
-        this.x264_pic_u = _malloc(this.video_info.width * this.video_info.height / 4);
-        this.x264_pic_v = _malloc(this.video_info.width * this.video_info.height / 4);
-        if (this.x264_pic_y == 0 || this.x264_pic_u == 0 || this.x264_pic_v == 0) {
-            console.log("_malloc: failed");
-            throw 'failed';
-        }
-
-        this.x264_nal = _malloc(8);
-        this.x264_nal_cnt = _malloc(8);
-
+        this.encoder.postMessage({
+            width: this.video_info.width,
+            height: this.video_info.height,
+            rgb: false,
+            fps_num: this.video_info.fps_num,
+            fps_den: this.video_info.fps_den,
+            x264: {
+                ssim: undefined,
+                preset: preset
+            }
+        });
         this.encode_start_time = Date.now();
         this._read_frame();
     }
 
-    _encode_frame(y: Uint8Array, u: Uint8Array, v: Uint8Array) {
-        HEAPU8.set (y, this.x264_pic_y);
-        HEAPU8.set (u, this.x264_pic_u);
-        HEAPU8.set (v, this.x264_pic_v);
-        _x264_picture_init (this.x264_pic);
-        _x264_picture_setup (this.x264_pic, 0x0001/*X264_CSP_I420*/, this.frame_count,
-                             this.video_info.width, this.video_info.width / 2, this.video_info.width / 2,
-                             this.x264_pic_y, this.x264_pic_u, this.x264_pic_v);
-        setValue (this.x264_nal_cnt, 0, 'i32');
-
-        var ret = _x264_encoder_encode(this.x264_handle,
-                                       this.x264_nal,
-                                       this.x264_nal_cnt,
-                                       this.x264_pic,
-                                       this.x264_pic_out);
-        if (ret < 0) {
-            console.log('x264_encoder_encode failed: ' + ret);
-            throw 'failed';
-        }
-        if (ret > 0)
-            this._store_yuv(ret);
+    _encode_frame(yuv: Uint8Array) {
+        this.encoder.postMessage(yuv, [yuv.buffer]);
     }
 
-    _encode_flush() {
-        console.log('delayed frames: ' + _x264_encoder_delayed_frames (this.x264_handle));
-        while (_x264_encoder_delayed_frames (this.x264_handle) > 0) {
-            setValue (this.x264_nal_cnt, 0, 'i32');
-            var ret = _x264_encoder_encode(this.x264_handle,
-                                           this.x264_nal,
-                                           this.x264_nal_cnt,
-                                           0,
-                                           this.x264_pic_out);
-            if (ret < 0) break;
-            if (ret > 0)
-                this._store_yuv(ret);
-        }
-    }
-
-    _store_yuv (size: number) {
-        var nal = <number>getValue(this.x264_nal, 'i32');
-        var p_payload = <number>getValue (nal + 24, 'i32');
+    _store_yuv (data: Uint8Array) {
         ++this.num_payloads;
-        //console.log(this.num_payloads + ': payload_size=' + size);
-        this.output.set(HEAPU8.subarray(p_payload, p_payload + size), this.output_filled);
-        this.output_filled += size;
+        this.output.set(data, this.output_filled);
+        this.output_filled += data.length;
     }
 }
 
 document.addEventListener("DOMContentLoaded", function(event) {
+    var get_file = () => {
+        return (<HTMLInputElement>document.getElementById("fileSelector")).files[0];
+    };
     document.getElementById("y4mtest").addEventListener("click", function(ev) {
-        new ReadTest(new Y4MReader()).run((<HTMLInputElement>document.getElementById("fileSelector")).files[0]);
+        new ReadTest(new Y4MReader()).run(get_file())
     });
     document.getElementById("h264test").addEventListener("click", function(ev) {
-        new ReadTest(new OpenH264Reader()).run((<HTMLInputElement>document.getElementById("fileSelector")).files[0]);
+        new ReadTest(new OpenH264Reader()).run(get_file());
     });
-    document.getElementById("h264enc").addEventListener("click", function(ev) {
-        new EncodeTest(new Y4MReader()).run((<HTMLInputElement>document.getElementById("fileSelector")).files[0]);
+    document.getElementById("x264enc").addEventListener("click", function(ev) {
+        new EncodeTest(new Y4MReader(), "x264_worker.js").run(get_file());
+    });
+    document.getElementById("openh264enc").addEventListener("click", function(ev) {
+        new EncodeTest(new Y4MReader(), "openh264_encoder.js").run(get_file());
     });
 });

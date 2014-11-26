@@ -125,6 +125,8 @@ var Y4MReader = (function () {
             }
             view = view.subarray(6);
             args.is_success = true;
+            args.yuv = view.subarray(0, _this.header.width * _this.header.height * 1.5);
+            args.yuv_owner = true;
             args.y = view.subarray(0, _this.header.width * _this.header.height);
             args.u = view.subarray(args.y.length, args.y.length + _this.header.width * _this.header.height / 4);
             args.v = view.subarray(args.y.length + args.u.length, args.y.length + args.u.length * 2);

@@ -17,7 +17,16 @@ var CameraTest = (function () {
         this.canvas_src_ctx = this.canvas_src.getContext("2d");
         this.canvas_dst = document.getElementById("canvas_dst");
         this.status = document.getElementById("status");
-        this.encoder = new Worker("x264_worker.js");
+        switch (document.getElementById("encoder").value) {
+            case "x264":
+                this.encoder = new Worker("x264_worker.js");
+                break;
+            case "openh264":
+                this.encoder = new Worker("openh264_encoder.js");
+                break;
+            default:
+                throw "unknown encoder";
+        }
         this.decoder = new Worker("openh264_worker.js");
         this.encoder.onmessage = function (ev) {
             _this.encoded_frames++;
@@ -90,8 +99,10 @@ var CameraTest = (function () {
                 _this.encoder.postMessage({
                     width: _this.canvas_src.width,
                     height: _this.canvas_src.height,
-                    preset: parseInt(document.getElementById("x264presets").value),
-                    rgb: true
+                    rgb: true,
+                    x264: {
+                        preset: parseInt(document.getElementById("x264presets").value)
+                    }
                 });
                 _this.encode_start_time = _this.encode_period_time = Date.now();
                 _this._wait_next_frame();
@@ -124,7 +135,24 @@ var CameraTest = (function () {
     return CameraTest;
 })();
 document.addEventListener("DOMContentLoaded", function (event) {
+    var encoder_changed = function () {
+        var names = ["x264", "openh264"];
+        var cfgs = [
+            document.getElementById("x264cfg"),
+            undefined
+        ];
+        var selected_name = document.getElementById("encoder").value;
+        for (var i = 0; i < names.length; ++i) {
+            var value = (names[i] == selected_name ? "inline" : "none");
+            if (cfgs[i])
+                cfgs[i].style.display = value;
+        }
+    };
+    document.getElementById("encoder").addEventListener("change", function () {
+        encoder_changed();
+    });
     document.getElementById("start").addEventListener("click", function () {
         new CameraTest().run();
     });
+    encoder_changed();
 });

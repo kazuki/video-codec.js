@@ -16,6 +16,8 @@ class OpenEventArgs extends VideoInfo {
 class ReadEventArgs {
     is_success: boolean;
     is_eof: boolean;
+    yuv: Uint8Array;
+    yuv_owner: boolean;
     y: Uint8Array;
     u: Uint8Array;
     v: Uint8Array;
@@ -144,6 +146,8 @@ class Y4MReader implements VideoReader {
             view = view.subarray(6);
 
             args.is_success = true;
+            args.yuv = view.subarray(0, this.header.width * this.header.height * 1.5);
+            args.yuv_owner = true;
             args.y = view.subarray(0, this.header.width * this.header.height);
             args.u = view.subarray(args.y.length, args.y.length + this.header.width * this.header.height / 4);
             args.v = view.subarray(args.y.length + args.u.length, args.y.length + args.u.length * 2);
