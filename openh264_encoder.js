@@ -142,7 +142,7 @@ var OpenH264Encoder = (function () {
             layer.nalLengthList = HEAP32.subarray(getValue(p + 8, 'i32') >> 2, (getValue(p + 8, 'i32') >> 2) + layer.nalCount);
             var size = 0;
             for (var j = 0; j < layer.nalCount; ++j)
-                size += layer.nalLengthList[i];
+                size += layer.nalLengthList[j];
             layer.bitstream = HEAPU8.subarray(getValue(p + 12, 'i32'), getValue(p + 12, 'i32') + size);
             ret.layers.push(layer);
         }
