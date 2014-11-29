@@ -77,7 +77,7 @@ void SetupSEncParamExt (SEncParamExt *param, int width, int height, int target_b
     param->iTargetBitrate = target_bitrate;
     param->iMaxBitrate = 1 << 31;
     param->iRCMode = RC_QUALITY_MODE; //RC_BITRATE_MODE;
-    param->fMaxFrameRate = 60.0f;
+    param->fMaxFrameRate = 24.0f;
 
     param->bEnableFrameSkip = 0;
     param->bEnableBackgroundDetection = 1;

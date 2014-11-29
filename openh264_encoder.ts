@@ -37,6 +37,7 @@ class OpenH264Encoder {
         var width = this.width = <number>cfg.width || 0;
         var height = this.height = <number>cfg.height || 0;
         var rgb_mode = <boolean>cfg.rgb || false;
+        cfg = cfg.openh264 || {};
 
         var param = _malloc(_SizeOfSEncParamExt());
         this.fbi = _malloc(_SizeOfSFrameBSInfo());
@@ -47,7 +48,7 @@ class OpenH264Encoder {
         var ret = _ISVCEncoderGetDefaultParams (this.encoder, param);
         if (ret != 0)
             throw "ISVCEncoderGetDefaultParams failed: " + ret;
-        _SetupSEncParamExt(param, width, height, 500 * 1000);
+        _SetupSEncParamExt(param, width, height, (cfg["bitrate"]||1000) * 1000);
 
         ret = _ISVCEncoderInitializeExt(this.encoder, param);
         if (ret != 0)

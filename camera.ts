@@ -156,7 +156,8 @@ class CameraTest {
                     width: this.canvas_src.width,
                     height: this.canvas_src.height,
                     rgb: true,
-                    x264: this._get_x264_cfg()
+                    x264: this._get_x264_cfg(),
+                    openh264: this._get_openh264_cfg()
                 });
                 this.encode_start_time = this.encode_period_time = Date.now();
                 this._wait_next_frame();
@@ -209,6 +210,12 @@ class CameraTest {
         }
         return ret;
     }
+
+    _get_openh264_cfg() {
+        return {
+            "bitrate": parseInt((<HTMLInputElement>document.getElementById("openh264bitrate")).value)
+        };
+    }
 }
 
 document.addEventListener("DOMContentLoaded", function(event) {
@@ -216,7 +223,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         var names = ["x264", "openh264"];
         var cfgs = [
             document.getElementById("x264cfg"),
-            undefined
+            document.getElementById("openh264cfg")
         ];
         var selected_name = (<HTMLSelectElement>document.getElementById("encoder")).value;
         for (var i = 0; i < names.length; ++i) {

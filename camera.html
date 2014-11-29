@@ -69,6 +69,11 @@
             <option value="zerolatency">zerolatency</option>
           </select>
         </fieldset>
+        <fieldset id="openh264cfg">
+          <legend>openH264 config</legend>
+          <label for="openh264bitrate">bitrate(in 24fps, kbps):</label>
+          <input type="number" min="0" max="300000" step="10" id="openh264bitrate" name="openh264bitrate" value="1000" size="4" style="width:4em;text-align:right">
+        </fieldset>
         <button id="start">start</button>
         <div id="status">(- fps - kbps - kbit/frame (avg: - fps - kbps -kbit/frame)</div>
       </div>
