@@ -4,8 +4,20 @@
 /// <reference path="libx264.d.ts" />
 var ReadTest = (function () {
     function ReadTest(reader) {
+        this.renderer_initialized = false;
         this.frame_count = 0;
         this.reader = reader;
+        switch (document.getElementById("renderer").value) {
+            case "webgl":
+                this.renderer = new WebGLRenderer();
+                console.log("WebGL Renderer (YUV420->RGB conversion in shader)");
+                break;
+            default:
+                this.renderer = new RGBRenderer();
+                console.log("Canvas.putImageData Renderer (YUV420->RGB conversion in asm.js)");
+                break;
+        }
+        this.renderer = new WebGLRenderer();
     }
     ReadTest.prototype.get_playback_scale = function () {
         return parseFloat(document.getElementById('playback_scale').value);
@@ -25,7 +37,7 @@ var ReadTest = (function () {
         });
     };
     ReadTest.prototype._init_renderer = function () {
-        this.renderer = new WebGLRenderer();
+        this.renderer_initialized = true;
         var div = document.getElementById("drawArea");
         if (div.firstChild)
             div.removeChild(div.firstChild);
@@ -65,7 +77,7 @@ var ReadTest = (function () {
                 return;
             }
             _this.frame_count++;
-            if (!_this.renderer) {
+            if (!_this.renderer_initialized) {
                 _this.video_info = _this.reader.get_video_info();
                 _this._init_renderer();
             }

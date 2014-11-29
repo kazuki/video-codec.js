@@ -9,10 +9,22 @@ class ReadTest {
     video_info: VideoInfo;
     buf: Uint8Array;
     renderer: IRenderer;
+    renderer_initialized = false;
     frame_count = 0;
 
     constructor(reader: VideoReader) {
         this.reader = reader;
+        switch ((<HTMLSelectElement>document.getElementById("renderer")).value) {
+        case "webgl":
+            this.renderer = new WebGLRenderer();
+            console.log("WebGL Renderer (YUV420->RGB conversion in shader)");
+            break;
+        default:
+            this.renderer = new RGBRenderer();
+            console.log("Canvas.putImageData Renderer (YUV420->RGB conversion in asm.js)");
+            break;
+        }
+        this.renderer = new WebGLRenderer();
     }
 
     get_playback_scale(): number {
@@ -34,7 +46,7 @@ class ReadTest {
     }
 
     _init_renderer() {
-        this.renderer = new WebGLRenderer();
+        this.renderer_initialized = true;
         var div = document.getElementById("drawArea");
         if (div.firstChild) div.removeChild(div.firstChild);
         var canvas = <HTMLCanvasElement>document.createElement("canvas");
@@ -71,7 +83,7 @@ class ReadTest {
                 return;
             }
             this.frame_count ++;
-            if (!this.renderer) {
+            if (!this.renderer_initialized) {
                 this.video_info = this.reader.get_video_info();
                 this._init_renderer();
             }
