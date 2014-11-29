@@ -3,8 +3,9 @@ var CameraTest = (function () {
     function CameraTest() {
         var _this = this;
         this.renderer = undefined;
-        this.target_interval = 0; //(1.0 / 30.0 * 1000).toFixed(0);
+        this.target_interval = 1000 / 24 - 10;
         this.prev_video_time = 0;
+        this.timer_cleared = true;
         this.queued_frames = 0;
         this.max_queued_frames = 0;
         this.encoded_frames = 0;
@@ -48,8 +49,18 @@ var CameraTest = (function () {
                 _this.status.innerHTML = avg_period.toFixed(2) + 'fps ' + (avg_bps_period / 1000).toFixed(0) + 'kbps ' + (bytes * 8 / 1000 / frames).toFixed(0) + 'kbps/frame. ' + '(Avg: ' + avg.toFixed(2) + 'fps ' + (avg_bps / 1000).toFixed(0) + 'kbps ' + (_this.encoded_bytes * 8 / 1000 / _this.encoded_frames).toFixed(0) + 'kbps/frame)';
             }
             _this.queued_frames--;
-            if (_this.queued_frames <= _this.max_queued_frames)
-                _this._wait_next_frame();
+            if (_this.queued_frames <= _this.max_queued_frames) {
+                if (_this.timer_cleared) {
+                    var delta = _this.video.currentTime - _this.prev_video_time;
+                    if (_this.target_interval <= delta) {
+                        _this._frame_updated();
+                        _this._wait_next_frame();
+                    }
+                    else {
+                        _this._wait_next_frame(_this.target_interval - delta);
+                    }
+                }
+            }
         };
         this.decoder.onmessage = function (ev) {
             if (!_this.renderer) {
@@ -100,28 +111,34 @@ var CameraTest = (function () {
                     width: _this.canvas_src.width,
                     height: _this.canvas_src.height,
                     rgb: true,
-                    x264: {
-                        preset: parseInt(document.getElementById("x264presets").value)
-                    }
+                    x264: _this._get_x264_cfg()
                 });
                 _this.encode_start_time = _this.encode_period_time = Date.now();
                 _this._wait_next_frame();
             }
         }, 0);
     };
-    CameraTest.prototype._wait_next_frame = function () {
+    CameraTest.prototype._wait_next_frame = function (interval) {
         var _this = this;
-        if (this.queued_frames > this.max_queued_frames)
+        if (interval === void 0) { interval = undefined; }
+        if (!this.timer_cleared) {
             return;
+        }
+        if (this.queued_frames > this.max_queued_frames) {
+            this.timer_cleared = true;
+            return;
+        }
+        this.timer_cleared = false;
+        if (!interval)
+            interval = this.target_interval;
         window.setTimeout(function () {
             if (_this.prev_video_time != _this.video.currentTime) {
                 _this.prev_video_time = _this.video.currentTime;
                 _this._frame_updated();
             }
-            else {
-                _this._wait_next_frame();
-            }
-        }, this.target_interval);
+            _this.timer_cleared = true;
+            _this._wait_next_frame();
+        }, interval);
     };
     CameraTest.prototype._frame_updated = function () {
         if (this.queued_frames <= this.max_queued_frames) {
@@ -130,7 +147,20 @@ var CameraTest = (function () {
             this.encoder.postMessage(img.data, [img.data.buffer]);
             this.queued_frames++;
         }
-        this._wait_next_frame();
+    };
+    CameraTest.prototype._get_x264_cfg = function () {
+        var ret = {};
+        ret["preset"] = document.getElementById("x264presets").value;
+        ret["tune"] = document.getElementById("x264tune").value;
+        switch (document.getElementById("x264rcmode").value) {
+            case "quality":
+                ret["crf"] = document.getElementById("x264quality").value;
+                break;
+            case "bitrate":
+                ret["bitrate"] = document.getElementById("x264bitrate").value;
+                break;
+        }
+        return ret;
     };
     return CameraTest;
 })();
@@ -148,11 +178,23 @@ document.addEventListener("DOMContentLoaded", function (event) {
                 cfgs[i].style.display = value;
         }
     };
-    document.getElementById("encoder").addEventListener("change", function () {
-        encoder_changed();
-    });
+    var x264_mode_changed = function () {
+        var modes = ["quality", "bitrate"];
+        var cfgs = [
+            document.getElementById("x264quality"),
+            document.getElementById("x264bitrate")
+        ];
+        var selected_mode = document.getElementById("x264rcmode").value;
+        for (var i = 0; i < modes.length; ++i) {
+            var value = (modes[i] == selected_mode ? "inline" : "none");
+            cfgs[i].style.display = value;
+        }
+    };
+    document.getElementById("encoder").addEventListener("change", encoder_changed);
+    document.getElementById("x264rcmode").addEventListener("change", x264_mode_changed);
     document.getElementById("start").addEventListener("click", function () {
         new CameraTest().run();
     });
     encoder_changed();
+    x264_mode_changed();
 });

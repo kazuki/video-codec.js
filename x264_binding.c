@@ -3,17 +3,12 @@
 #include <stdlib.h>
 #include "x264.h"
 
-static char *X264_PRESET_TABLE[] = {
-    "ultrafast", "superfast", "veryfast", "faster", "fast",
-    "medium", "slow", "slower", "veryslow", "placebo"
-};
-
 x264_param_t *x264_encoder_param_create (int width, int height, int fps_num, int fps_den,
-                                         int preset)
+                                         const char *preset, const char *tune)
 {
     x264_param_t *param = (x264_param_t*)malloc(sizeof(x264_param_t));
     x264_param_default (param);
-    if (x264_param_default_preset (param, X264_PRESET_TABLE[preset], 0 ) < 0)
+    if (x264_param_default_preset (param, preset, tune) < 0)
         return 0;
     if (x264_param_apply_profile (param, "baseline") < 0)
         return 0;

@@ -1,6 +1,6 @@
 declare function _x264_encoder_param_create(width: number, height: number,
                                             fps_num: number, fps_den: number,
-                                            preset: number): number;
+                                            preset: number, tune: number): number;
 declare function _x264_encoder_param_free(handle: number): void;
 declare function _x264_encoder_open2(ptr: number): number;
 declare function _x264_encoder_encode(ptr: number, pp_nal: number, pi_nal: number,

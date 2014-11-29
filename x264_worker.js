@@ -28,11 +28,23 @@ var X264Worker = (function () {
         var height = cfg.height || 0;
         var rgb_mode = cfg.rgb || false;
         var x264_cfg = cfg.x264 || {};
-        var preset = x264_cfg.preset || 0;
+        var preset = x264_cfg["preset"] || "ultrafast";
+        var tune = x264_cfg["tune"] || undefined;
         this.width = width;
         this.height = height;
-        console.log("x264 init: " + width + "x" + height + ", preset=" + preset + ", rgb_mode=" + rgb_mode);
-        var param = _x264_encoder_param_create(width, height, 60, 1, preset);
+        console.log("x264 init: " + width + "x" + height + ", preset=" + preset + ", tune=" + tune + ", rgb_mode=" + rgb_mode);
+        var p_preset = allocate(intArrayFromString(preset), 'i8', ALLOC_NORMAL);
+        var p_tune = (tune ? allocate(intArrayFromString(tune), 'i8', ALLOC_NORMAL) : 0);
+        var param = _x264_encoder_param_create(width, height, 24, 1, p_preset, p_tune);
+        _free(p_preset);
+        if (p_tune > 0)
+            _free(p_tune);
+        delete x264_cfg["preset"];
+        delete x264_cfg["tune"];
+        for (var key in x264_cfg) {
+            if (!this.x264_param_parse(param, key, x264_cfg[key]))
+                console.log("x264_param_parse failed: " + key + "=" + x264_cfg[key]);
+        }
         this.x264_handle = _x264_encoder_open2(param);
         if (this.x264_handle == 0) {
             console.log("x264_encoder_open: failed");

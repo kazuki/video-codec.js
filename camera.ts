@@ -11,8 +11,9 @@ class CameraTest {
     encoder: Worker;
     decoder: Worker;
 
-    target_interval = 0; //(1.0 / 30.0 * 1000).toFixed(0);
+    target_interval = 1000 / 24 - 10;
     prev_video_time = 0;
+    timer_cleared = true;
 
     queued_frames = 0;
     max_queued_frames = 0;
@@ -72,8 +73,17 @@ class CameraTest {
             }
 
             this.queued_frames--;
-            if (this.queued_frames <= this.max_queued_frames)
-                this._wait_next_frame();
+            if (this.queued_frames <= this.max_queued_frames) {
+                if (this.timer_cleared) {
+                    var delta = this.video.currentTime - this.prev_video_time;
+                    if (this.target_interval <= delta) {
+                        this._frame_updated();
+                        this._wait_next_frame();
+                    } else {
+                        this._wait_next_frame(this.target_interval - delta);
+                    }
+                }
+            }
         };
         this.decoder.onmessage = (ev: MessageEvent) => {
             if (!this.renderer) {
@@ -128,9 +138,7 @@ class CameraTest {
                     width: this.canvas_src.width,
                     height: this.canvas_src.height,
                     rgb: true,
-                    x264: {
-                        preset: parseInt((<HTMLSelectElement>document.getElementById("x264presets")).value)
-                    }
+                    x264: this._get_x264_cfg()
                 });
                 this.encode_start_time = this.encode_period_time = Date.now();
                 this._wait_next_frame();
@@ -138,17 +146,25 @@ class CameraTest {
         }, 0);
     }
 
-    _wait_next_frame() {
-        if (this.queued_frames > this.max_queued_frames)
+    _wait_next_frame(interval: number = undefined) {
+        if (!this.timer_cleared) {
             return;
+        }
+        if (this.queued_frames > this.max_queued_frames) {
+            this.timer_cleared = true;
+            return;
+        }
+        this.timer_cleared = false;
+        if (!interval)
+            interval = this.target_interval;
         window.setTimeout(() => {
             if (this.prev_video_time != this.video.currentTime) {
                 this.prev_video_time = this.video.currentTime;
                 this._frame_updated();
-            } else {
-                this._wait_next_frame();
             }
-        }, this.target_interval);
+            this.timer_cleared = true;
+            this._wait_next_frame();
+        }, interval);
     }
 
     _frame_updated() {
@@ -159,7 +175,21 @@ class CameraTest {
             this.encoder.postMessage(img.data, [img.data.buffer]);
             this.queued_frames ++;
         }
-        this._wait_next_frame();
+    }
+
+    _get_x264_cfg() {
+        var ret = {};
+        ret["preset"] = (<HTMLSelectElement>document.getElementById("x264presets")).value;
+        ret["tune"] = (<HTMLSelectElement>document.getElementById("x264tune")).value;
+        switch ((<HTMLSelectElement>document.getElementById("x264rcmode")).value) {
+        case "quality":
+            ret["crf"] = (<HTMLInputElement>document.getElementById("x264quality")).value;
+            break;
+        case "bitrate":
+            ret["bitrate"] = (<HTMLInputElement>document.getElementById("x264bitrate")).value;
+            break;
+        }
+        return ret;
     }
 }
 
@@ -177,12 +207,24 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 cfgs[i].style.display = value;
         }
     };
-    document.getElementById("encoder").addEventListener("change", () => {
-        encoder_changed();
-    });
+    var x264_mode_changed = () => {
+        var modes = ["quality", "bitrate"];
+        var cfgs = [
+            document.getElementById("x264quality"),
+            document.getElementById("x264bitrate")
+        ];
+        var selected_mode = (<HTMLSelectElement>document.getElementById("x264rcmode")).value;
+        for (var i = 0; i < modes.length; ++i) {
+            var value = (modes[i] == selected_mode ? "inline" : "none");
+            cfgs[i].style.display = value;
+        }
+    };
+    document.getElementById("encoder").addEventListener("change", encoder_changed);
+    document.getElementById("x264rcmode").addEventListener("change", x264_mode_changed);
     document.getElementById("start").addEventListener("click", () => {
         new CameraTest().run();
     });
 
     encoder_changed();
+    x264_mode_changed();
 });

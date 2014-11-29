@@ -7,6 +7,7 @@
     <script src="sylvester.js" type="text/javascript"></script>
     <script src="camera.js" type="text/javascript"></script>
     <style>
+      * { font-size: small; }
       fieldset { display: inline; padding: 0.5ex;}
     </style>
   </head>
@@ -32,18 +33,36 @@
         </fieldset>
         <fieldset id="x264cfg">
           <legend>x264 config</legend>
-          <label>preset:</label>
-          <select id="x264presets">
-            <option value="0" selected>UltraFast</option>
-            <option value="1">SuperFast</option>
-            <option value="2">VeryFast</option>
-            <option value="3">Faster</option>
-            <option value="4">Fast</option>
-            <option value="5">Medium</option>
-            <option value="6">Slow</option>
-            <option value="7">Slower</option>
-            <option value="8">VerySlow</option>
-            <option value="9">Placebo</option>
+          <label for="x264rcmode">mode:</label>
+          <select id="x264rcmode" name="x264rcmode">
+            <option value="quality">Quality</option>
+            <option value="bitrate">Bitrate(kbps)</option>
+          </select>
+          <input type="number" min="0" max="51" step="0.1" id="x264quality" name="x264quality" value="23" style="width:4em;text-align:right">
+          <input type="number" min="0" max="300000" step="10" id="x264bitrate" name="x264bitrate" value="1000" size="4" style="width:4em;text-align:right">
+          <label for="x264presets">preset:</label>
+          <select id="x264presets" name="x264presets">
+            <option value="ultrafast" selected>UltraFast</option>
+            <option value="superfast">SuperFast</option>
+            <option value="veryfast">VeryFast</option>
+            <option value="faster">Faster</option>
+            <option value="fast">Fast</option>
+            <option value="medium">Medium</option>
+            <option value="slow">Slow</option>
+            <option value="slower">Slower</option>
+            <option value="veryslow">VerySlow</option>
+            <option value="placebo">Placebo</option>
+          </select>
+          <select id="x264tune" name="x264tune">
+            <option value="" selected>default</option>
+            <option value="film">film</option>
+            <option value="animation">animation</option>
+            <option value="grain">grain</option>
+            <option value="stillimage">stillimage</option>
+            <option value="psnr">psnr</option>
+            <option value="ssim">ssim</option>
+            <option value="fastdecode">fastdecode</option>
+            <option value="zerolatency">zerolatency</option>
           </select>
         </fieldset>
         <button id="start">start</button>
