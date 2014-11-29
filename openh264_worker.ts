@@ -6,11 +6,13 @@ class OpenH264Worker {
     worker: Worker;
     handle: number;
     decoder: number;
+    rgb_mode = false;
 
     buffer: Uint8Array;
     buffer_ptr: number;
     dst_data: number;
     sbufferinfo: number;
+    buffer_rgb: number;
 
     msg: Uint8Array;
     frame: Uint8Array;
@@ -35,6 +37,17 @@ class OpenH264Worker {
         this.msg = new Uint8Array(1);
         this.frame = null;
         
+        this.worker.onmessage = (e: MessageEvent) => {
+            this._init(e.data);
+        };
+    }
+
+    _init(cfg: any): void {
+        if (cfg instanceof Uint8Array) {
+            this._decode(<Uint8Array>cfg);
+        } else {
+            this.rgb_mode = <boolean>cfg.rgb || false;
+        }
         this.worker.onmessage = (e: MessageEvent) => {
             this._decode(<Uint8Array>e.data);
         };
@@ -65,27 +78,40 @@ class OpenH264Worker {
                     width: w,
                     height: h
                 });
-                this.frame = new Uint8Array(w * h * 12 / 8); // YUV420
+                if (this.rgb_mode) {
+                    this.frame = new Uint8Array(w * h * 4); // RGBA
+                    this.buffer_rgb = _malloc(w * h * 4);
+                } else {
+                    this.frame = new Uint8Array(w * h * 12 / 8); // YUV420
+                }
             }
-            var p = getValue(this.dst_data + 0, 'i32');
-            for (var y = 0; y < h; ++y) {
-                this.frame.set(HEAPU8.subarray(p, p + w), y * w);
-                p += s0;
-            }
-
-            var off = w * h;
-            h /= 2;
-            w /= 2;
-            p = getValue(this.dst_data + 4, 'i32');
-            for (var y = 0; y < h; ++y) {
-                this.frame.set(HEAPU8.subarray(p, p + w), off + y * w);
-                p += s1;
-            }
-            off += w * h;
-            p = getValue(this.dst_data + 8, 'i32');
-            for (var y = 0; y < h; ++y) {
-                this.frame.set(HEAPU8.subarray(p, p + w), off + y * w);
-                p += s1;
+            if (this.rgb_mode) {
+                _yuv420_to_rgba(w, h,
+                                getValue(this.dst_data + 0, 'i32'),
+                                getValue(this.dst_data + 4, 'i32'),
+                                getValue(this.dst_data + 8, 'i32'),
+                                s0, s1, this.buffer_rgb);
+                this.frame.set(HEAPU8.subarray(this.buffer_rgb, this.buffer_rgb + w * h * 4));
+            } else {
+                var p = getValue(this.dst_data + 0, 'i32');
+                for (var y = 0; y < h; ++y) {
+                    this.frame.set(HEAPU8.subarray(p, p + w), y * w);
+                    p += s0;
+                }
+                var off = w * h;
+                h /= 2;
+                w /= 2;
+                p = getValue(this.dst_data + 4, 'i32');
+                for (var y = 0; y < h; ++y) {
+                    this.frame.set(HEAPU8.subarray(p, p + w), off + y * w);
+                    p += s1;
+                }
+                off += w * h;
+                p = getValue(this.dst_data + 8, 'i32');
+                for (var y = 0; y < h; ++y) {
+                    this.frame.set(HEAPU8.subarray(p, p + w), off + y * w);
+                    p += s1;
+                }
             }
             this.worker.postMessage(this.frame);
         } else {

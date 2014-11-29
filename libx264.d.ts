@@ -14,5 +14,5 @@ declare function _x264_picture_setup (ptr: number, i_csp: number, i_pts: number,
                                       stride0: number, stride1: number, stride2: number,
                                       y: number, u: number, v: number): void;
 declare function _x264_param_parse (ptr: number, name: number, value: number): number;
-declare function _rgba_to_yuv420 (width: number, height: number, frame_idx: number,
+declare function _rgba_to_yuv420 (width: number, height: number,
                                   rgba: number, y: number, u: number, v: number): void;

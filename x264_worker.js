@@ -137,7 +137,7 @@ var X264Worker = (function () {
     };
     X264Worker.prototype.encode_frame_rgb = function (rgb) {
         HEAPU8.set(rgb, this.x264_rgb);
-        _rgba_to_yuv420(this.width, this.height, this.frame_idx, this.x264_rgb, this.x264_pic_y, this.x264_pic_u, this.x264_pic_v);
+        _rgba_to_yuv420(this.width, this.height, this.x264_rgb, this.x264_pic_y, this.x264_pic_u, this.x264_pic_v);
         this.encode_frame();
     };
     return X264Worker;

@@ -17,5 +17,9 @@ declare function _SizeOfSSourcePicture(): number;
 declare function _SetupSEncParamExt(ptr: number, width: number, height: number,
                                     target_bitrate: number): void;
 
-declare function _rgba_to_yuv420 (width: number, height: number, frame_idx: number,
+declare function _rgba_to_yuv420 (width: number, height: number,
                                   rgba: number, y: number, u: number, v: number): void;
+declare function _yuv420_to_rgba (width: number, height: number,
+                                  y: number, u: number, v: number,
+                                  stride_y: number, stride_uv: number,
+                                  rgba: number): void;

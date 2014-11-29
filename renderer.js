@@ -164,5 +164,44 @@ var WebGLRenderer = (function () {
         this.v.fill(v);
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     };
+    WebGLRenderer.prototype.is_rgba = function () {
+        return false;
+    };
     return WebGLRenderer;
+})();
+var RGBRenderer = (function () {
+    function RGBRenderer() {
+    }
+    RGBRenderer.prototype.init = function (canvas, width, height) {
+        this.width = width;
+        this.height = height;
+        this.ctx = canvas.getContext('2d');
+        this.img = this.ctx.createImageData(width, height);
+    };
+    RGBRenderer.prototype.render = function (rgba, dummy_arg0, dummy_arg1) {
+        //var x = <Uint8ClampedArray>this.img.data;
+        var x = this.img.data;
+        new Uint8Array(x.buffer, x.byteOffset, x.byteLength).set(rgba);
+        this.ctx.putImageData(this.img, 0, 0);
+    };
+    RGBRenderer.prototype.is_rgba = function () {
+        return true;
+    };
+    RGBRenderer.prototype.yuv_to_rgba = function (y, u, v, rgba) {
+        for (var i = 0; i < this.height; ++i) {
+            var q = (i * this.width) | 0;
+            var p = (q >> 2) | 0;
+            for (var j = 0; j < this.width; ++j) {
+                var qj = (q + j) | 0;
+                var qj4 = (qj * 4) | 0;
+                var pj = (p + ((j >> 1) | 0)) | 0;
+                var x = (1.164 * (y[qj] - 16)) | 0;
+                rgba[qj4 + 0] = (x + 1.596 * (v[pj] - 128)) | 0;
+                rgba[qj4 + 1] = (x - 0.391 * (u[pj] - 128) - 0.813 * (v[pj] - 128)) | 0;
+                rgba[qj4 + 2] = (x + 2.018 * (u[pj] - 128)) | 0;
+                rgba[qj4 + 3] = 255;
+            }
+        }
+    };
+    return RGBRenderer;
 })();

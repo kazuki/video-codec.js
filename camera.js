@@ -2,7 +2,7 @@
 var CameraTest = (function () {
     function CameraTest() {
         var _this = this;
-        this.renderer = undefined;
+        this.renderer_initialized = false;
         this.target_interval = 1000 / 24 - 10;
         this.prev_video_time = 0;
         this.timer_cleared = true;
@@ -29,6 +29,19 @@ var CameraTest = (function () {
                 throw "unknown encoder";
         }
         this.decoder = new Worker("openh264_worker.js");
+        switch (document.getElementById("renderer").value) {
+            case "webgl":
+                this.renderer = new WebGLRenderer();
+                console.log("WebGL Renderer (YUV420->RGB conversion in shader)");
+                break;
+            default:
+                this.renderer = new RGBRenderer();
+                console.log("Canvas.putImageData Renderer (YUV420->RGB conversion in asm.js)");
+                break;
+        }
+        this.decoder.postMessage({
+            rgb: this.renderer.is_rgba()
+        });
         this.encoder.onmessage = function (ev) {
             _this.encoded_frames++;
             if (ev.data.length > 1) {
@@ -46,7 +59,7 @@ var CameraTest = (function () {
                 _this.encoded_frames_period = _this.encoded_frames;
                 _this.encoded_bytes_period = _this.encoded_bytes;
                 _this.encode_period_time = Date.now();
-                _this.status.innerHTML = avg_period.toFixed(2) + 'fps ' + (avg_bps_period / 1000).toFixed(0) + 'kbps ' + (bytes * 8 / 1000 / frames).toFixed(0) + 'kbps/frame. ' + '(Avg: ' + avg.toFixed(2) + 'fps ' + (avg_bps / 1000).toFixed(0) + 'kbps ' + (_this.encoded_bytes * 8 / 1000 / _this.encoded_frames).toFixed(0) + 'kbps/frame)';
+                _this.status.innerHTML = avg_period.toFixed(2) + 'fps ' + (avg_bps_period / 1000).toFixed(0) + 'kbps ' + (bytes * 8 / 1000 / frames).toFixed(0) + 'kbit/frame ' + '(avg: ' + avg.toFixed(2) + 'fps ' + (avg_bps / 1000).toFixed(0) + 'kbps ' + (_this.encoded_bytes * 8 / 1000 / _this.encoded_frames).toFixed(0) + 'kbit/frame)';
             }
             _this.queued_frames--;
             if (_this.queued_frames <= _this.max_queued_frames) {
@@ -63,26 +76,31 @@ var CameraTest = (function () {
             }
         };
         this.decoder.onmessage = function (ev) {
-            if (!_this.renderer) {
+            if (!_this.renderer_initialized) {
                 if (ev.data instanceof Uint8Array)
                     return;
                 var width = _this.decoder_width = ev.data.width;
                 var height = _this.decoder_height = ev.data.height;
                 _this.canvas_dst.width = width;
                 _this.canvas_dst.height = height;
-                _this.renderer = new WebGLRenderer();
                 _this.renderer.init(_this.canvas_dst, width, height);
+                _this.renderer_initialized = true;
                 return;
             }
             --_this.decoder_queue;
             if (ev.data.length == 1)
                 return;
             var yuv = ev.data;
-            var s = _this.decoder_width * _this.decoder_height;
-            var y = yuv.subarray(0, s);
-            var u = yuv.subarray(s, s * 1.25);
-            var v = yuv.subarray(s * 1.25, s * 1.5);
-            _this.renderer.render(y, u, v);
+            if (_this.renderer.is_rgba()) {
+                _this.renderer.render(yuv, yuv, yuv);
+            }
+            else {
+                var s = _this.decoder_width * _this.decoder_height;
+                var y = yuv.subarray(0, s);
+                var u = yuv.subarray(s, s * 1.25);
+                var v = yuv.subarray(s * 1.25, s * 1.5);
+                _this.renderer.render(y, u, v);
+            }
         };
     }
     CameraTest.prototype.run = function () {

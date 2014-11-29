@@ -2,7 +2,7 @@ TARGETS=libopenh264.js libx264.js input.js test.js renderer.js camera.js openh26
 EMCC_OPTS:=-O3 --llvm-lto 1 --memory-init-file 0 -s LIBRARY_DEPS_TO_AUTOEXPORT=[] -s INVOKE_RUN=0
 #EMCC_OPTS:=-O1 --llvm-lto 1 --memory-init-file 0 -s LIBRARY_DEPS_TO_AUTOEXPORT=[] -s INVOKE_RUN=0
 
-COLORSPACE_EXPORTS:='_rgba_to_yuv420'
+COLORSPACE_EXPORTS:='_rgba_to_yuv420','_yuv420_to_rgba'
 
 OPENH264_FLAGS:=-Iopenh264/codec/api/svc -s TOTAL_MEMORY=268435456
 OPENH264_FILES:=openh264/libopenh264.a openh264_binding.c colorspace.c

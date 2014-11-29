@@ -110,7 +110,7 @@ var OpenH264Encoder = (function () {
     };
     OpenH264Encoder.prototype.encode_frame_rgb = function (rgb) {
         HEAPU8.set(rgb, this.rgb_buf);
-        _rgba_to_yuv420(this.width, this.height, this.frame_count, this.rgb_buf, getValue(this.pic + 20, 'i32'), getValue(this.pic + 24, 'i32'), getValue(this.pic + 28, 'i32'));
+        _rgba_to_yuv420(this.width, this.height, this.rgb_buf, getValue(this.pic + 20, 'i32'), getValue(this.pic + 24, 'i32'), getValue(this.pic + 28, 'i32'));
         this.encode_frame();
     };
     OpenH264Encoder.prototype.encode_frame_yuv = function (yuv) {

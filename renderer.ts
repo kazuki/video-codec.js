@@ -7,6 +7,7 @@ declare var Matrix: any;
 interface IRenderer {
     init(canvas: HTMLCanvasElement, width: number, height: number): void;
     render(y: Uint8Array, u: Uint8Array, v: Uint8Array): void;
+    is_rgba(): boolean;
 }
 
 class Texture {
@@ -235,5 +236,51 @@ class WebGLRenderer implements IRenderer {
         this.u.fill(u);
         this.v.fill(v);
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+    }
+
+    is_rgba(): boolean {
+        return false;
+    }
+}
+
+class RGBRenderer {
+    img: ImageData;
+    ctx: CanvasRenderingContext2D;
+    width: number;
+    height: number;
+
+    init(canvas: HTMLCanvasElement, width: number, height: number): void {
+        this.width = width;
+        this.height = height;
+        this.ctx = canvas.getContext('2d');
+        this.img = this.ctx.createImageData(width, height);
+    }
+
+    render(rgba: Uint8Array, dummy_arg0: Uint8Array, dummy_arg1: Uint8Array): void {
+        //var x = <Uint8ClampedArray>this.img.data;
+        var x = <any>this.img.data;
+        new Uint8Array(x.buffer, x.byteOffset, x.byteLength).set(rgba);
+        this.ctx.putImageData(this.img, 0, 0);
+    }
+
+    is_rgba(): boolean {
+        return true;
+    }
+
+    yuv_to_rgba(y: Uint8Array, u: Uint8Array, v: Uint8Array, rgba: number[]) {
+        for (var i = 0; i < this.height; ++i) {
+            var q = (i * this.width)|0;
+            var p = (q >> 2)|0;
+            for (var j = 0; j < this.width; ++j) {
+                var qj = (q + j)|0;
+                var qj4 = (qj * 4)|0;
+                var pj = (p + ((j >> 1)|0))|0;
+                var x = (1.164 * (y[qj] - 16))|0;
+                rgba[qj4 + 0] = (x + 1.596 * (v[pj] - 128))|0;
+                rgba[qj4 + 1] = (x - 0.391 * (u[pj] - 128) - 0.813 * (v[pj] - 128))|0;
+                rgba[qj4 + 2] = (x + 2.018 * (u[pj] - 128))|0;
+                rgba[qj4 + 3] = 255;
+            }
+        }
     }
 }

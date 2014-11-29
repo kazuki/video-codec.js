@@ -5,7 +5,8 @@ class CameraTest {
     canvas_src: HTMLCanvasElement;
     canvas_src_ctx: any;
     canvas_dst: HTMLCanvasElement;
-    renderer: IRenderer = undefined;
+    renderer: IRenderer;
+    renderer_initialized = false;
     status: HTMLDivElement;
 
     encoder: Worker;
@@ -46,6 +47,19 @@ class CameraTest {
             throw "unknown encoder";
         }
         this.decoder = new Worker("openh264_worker.js");
+        switch ((<HTMLSelectElement>document.getElementById("renderer")).value) {
+        case "webgl":
+            this.renderer = new WebGLRenderer();
+            console.log("WebGL Renderer (YUV420->RGB conversion in shader)");
+            break;
+        default:
+            this.renderer = new RGBRenderer();
+            console.log("Canvas.putImageData Renderer (YUV420->RGB conversion in asm.js)");
+            break;
+        }
+        this.decoder.postMessage({
+            rgb: this.renderer.is_rgba()
+        });
         this.encoder.onmessage = (ev: MessageEvent) => {
             this.encoded_frames ++;
             if (ev.data.length > 1) {
@@ -66,10 +80,10 @@ class CameraTest {
                 this.encode_period_time = Date.now();
                 this.status.innerHTML = avg_period.toFixed(2) + 'fps ' +
                     (avg_bps_period / 1000).toFixed(0) + 'kbps ' +
-                    (bytes * 8 / 1000 / frames).toFixed(0) + 'kbps/frame. ' +
-                    '(Avg: ' + avg.toFixed(2) + 'fps ' +
+                    (bytes * 8 / 1000 / frames).toFixed(0) + 'kbit/frame ' +
+                    '(avg: ' + avg.toFixed(2) + 'fps ' +
                     (avg_bps / 1000).toFixed(0) + 'kbps ' +
-                    (this.encoded_bytes * 8 / 1000 / this.encoded_frames).toFixed(0) + 'kbps/frame)';
+                    (this.encoded_bytes * 8 / 1000 / this.encoded_frames).toFixed(0) + 'kbit/frame)';
             }
 
             this.queued_frames--;
@@ -86,15 +100,15 @@ class CameraTest {
             }
         };
         this.decoder.onmessage = (ev: MessageEvent) => {
-            if (!this.renderer) {
+            if (!this.renderer_initialized) {
                 if (ev.data instanceof Uint8Array)
                     return;
                 var width = this.decoder_width = ev.data.width;
                 var height = this.decoder_height = ev.data.height;
                 this.canvas_dst.width = width;
                 this.canvas_dst.height = height;
-                this.renderer = new WebGLRenderer();
                 this.renderer.init(this.canvas_dst, width, height);
+                this.renderer_initialized = true;
                 return;
             }
             
@@ -103,11 +117,15 @@ class CameraTest {
                 return;
 
             var yuv = <Uint8Array>ev.data;
-            var s = this.decoder_width * this.decoder_height;
-            var y = yuv.subarray(0, s);
-            var u = yuv.subarray(s, s * 1.25);
-            var v = yuv.subarray(s * 1.25, s * 1.5);
-            this.renderer.render(y, u, v);
+            if (this.renderer.is_rgba()) {
+                this.renderer.render(yuv, yuv, yuv);
+            } else {
+                var s = this.decoder_width * this.decoder_height;
+                var y = yuv.subarray(0, s);
+                var u = yuv.subarray(s, s * 1.25);
+                var v = yuv.subarray(s * 1.25, s * 1.5);
+                this.renderer.render(y, u, v);
+            }
         };
     }
     

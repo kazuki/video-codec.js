@@ -126,7 +126,7 @@ class OpenH264Encoder {
 
     encode_frame_rgb(rgb: Uint8Array): void {
         HEAPU8.set(rgb, this.rgb_buf);
-        _rgba_to_yuv420 (this.width, this.height, this.frame_count, this.rgb_buf,
+        _rgba_to_yuv420 (this.width, this.height, this.rgb_buf,
                          getValue(this.pic + 20, 'i32'),
                          getValue(this.pic + 24, 'i32'),
                          getValue(this.pic + 28, 'i32'));
