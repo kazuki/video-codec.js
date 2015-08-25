@@ -1,41 +1,47 @@
-LIBDE265_LIB=libde265/libde265/.libs/libde265.a
+NATIVE_DIR=./native
 
-THOR_DUMMY_TARGET=thor/build/Thorenc
+LIBDE265_DIR=$(NATIVE_DIR)/libde265
+LIBDE265_LIB=$(LIBDE265_DIR)/libde265/.libs/libde265.a
 
-LIBVPX_LIB=libvpx/libvpx_g.a
+THOR_DIR=$(NATIVE_DIR)/thor
+THOR_DUMMY_TARGET=$(THOR_DIR)/build/Thorenc
 
-OPENH264_LIB=openh264/libopenh264.a
+LIBVPX_DIR=$(NATIVE_DIR)/libvpx
+LIBVPX_LIB=$(LIBVPX_DIR)/libvpx_g.a
+
+OPENH264_DIR=$(NATIVE_DIR)/openh264
+OPENH264_LIB=$(OPENH264_DIR)/libopenh264.a
 
 TARGETS=$(LIBDE265_LIB) $(THOR_DUMMY_TARGET) $(LIBVPX_LIB) $(OPENH264_LIB)
 
 all: apply-patch $(TARGETS)
 clean:
-	(cd libde265; emmake make clean); \
-	(cd thor; emmake make clean); \
-	(cd libvpx; emmake make clean); \
-	(cd openh264; emmake make clean); \
+	(cd $(LIBDE265_DIR); rm -rf *; git reset --hard); \
+	(cd $(THOR_DIR);  rm -rf *; git reset --hard); \
+	(cd $(LIBVPX_DIR);  rm -rf *; git reset --hard); \
+	(cd $(OPENH264_DIR);  rm -rf *; git reset --hard); \
 	rm -f $(TARGETS)
 
 apply-patch:
-	./apply-patch.sh
+	cd $(NATIVE_DIR); ./apply-patch.sh
 
-$(LIBDE265_LIB): libde265/Makefile
-	cd libde265; emmake make
+$(LIBDE265_LIB): $(LIBDE265_DIR)/Makefile
+	cd $(LIBDE265_DIR); emmake make
 
-libde265/Makefile: libde265/configure
-	cd libde265; emconfigure ./configure --disable-sse --disable-arm --disable-dec265
+$(LIBDE265_DIR)/Makefile: $(LIBDE265_DIR)/configure
+	cd $(LIBDE265_DIR); emconfigure ./configure --disable-sse --disable-arm --disable-dec265
 
-libde265/configure:
-	cd libde265; ./autogen.sh
+$(LIBDE265_DIR)/configure:
+	cd $(LIBDE265_DIR); ./autogen.sh
 
 $(THOR_DUMMY_TARGET):
-	cd thor; emmake make
+	cd $(THOR_DIR); emmake make
 
-$(LIBVPX_LIB): libvpx/Makefile
-	cd libvpx; emmake make libvpx_g.a
+$(LIBVPX_LIB): $(LIBVPX_DIR)/Makefile
+	cd $(LIBVPX_DIR); emmake make libvpx_g.a
 
-libvpx/Makefile: libvpx/configure
-	cd libvpx; emconfigure ./configure --disable-multithread --target=generic-gnu --enable-vp10 --disable-examples --disable-docs
+$(LIBVPX_DIR)/Makefile: $(LIBVPX_DIR)/configure
+	cd $(LIBVPX_DIR); emconfigure ./configure --disable-multithread --target=generic-gnu --enable-vp10 --disable-examples --disable-docs
 
 $(OPENH264_LIB):
-	cd openh264; emmake make
+	cd $(OPENH264_DIR); emmake make

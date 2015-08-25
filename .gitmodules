@@ -1,12 +1,12 @@
 [submodule "openh264"]
-	path = openh264
+	path = native/openh264
 	url = https://github.com/cisco/openh264.git
 [submodule "libvpx"]
-	path = libvpx
+	path = native/libvpx
 	url = https://github.com/webmproject/libvpx.git
 [submodule "thor"]
-	path = thor
+	path = native/thor
 	url = https://github.com/cisco/thor.git
 [submodule "libde265"]
-	path = libde265
+	path = native/libde265
 	url = https://github.com/strukturag/libde265.git
