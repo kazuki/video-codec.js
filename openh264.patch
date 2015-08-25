@@ -1,0 +1,50 @@
+diff --git a/Makefile b/Makefile
+index 7925d80..c62410b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -14,7 +14,7 @@ LIBSUFFIX=a
+ CCAS=$(CC)
+ CXX_O=-o $@
+ CXX_LINK_O=-o $@
+-AR_OPTS=cr $@
++AR_OPTS=rc $@
+ LINK_LOCAL_DIR=-L.
+ LINK_LIB=-l$(1)
+ CFLAGS_OPT=-O3
+@@ -51,7 +51,7 @@ endif
+ # Configurations
+ ifeq ($(BUILDTYPE), Release)
+ CFLAGS += $(CFLAGS_OPT)
+-USE_ASM = Yes
++USE_ASM = No
+ else
+ CFLAGS += $(CFLAGS_DEBUG)
+ USE_ASM = No
+diff --git a/build/platform-linux.mk b/build/platform-linux.mk
+index b6419d1..2f6a351 100644
+--- a/build/platform-linux.mk
++++ b/build/platform-linux.mk
+@@ -4,7 +4,7 @@ SHAREDLIBSUFFIXVER=$(SHAREDLIBSUFFIX).$(SHAREDLIBVERSION)
+ SHLDFLAGS = -Wl,-soname,$(LIBPREFIX)$(PROJECT_NAME).$(SHAREDLIBSUFFIXVER)
+ CFLAGS += -Wall -fno-strict-aliasing -fPIC -MMD -MP
+ LDFLAGS += -lpthread
+-AR_OPTS = crD $@
++AR_OPTS = rc $@
+ ifeq ($(ASM_ARCH), x86)
+ ifeq ($(ARCH), x86_64)
+ ASMFLAGS += -f elf64
+diff --git a/codec/common/src/WelsThreadLib.cpp b/codec/common/src/WelsThreadLib.cpp
+index 94258a0..ea607d1 100644
+--- a/codec/common/src/WelsThreadLib.cpp
++++ b/codec/common/src/WelsThreadLib.cpp
+@@ -493,8 +493,8 @@ WELS_THREAD_ERROR_CODE    WelsQueryLogicalProcessInfo (WelsLogicalProcessInfo* p
+ 
+   size_t len = sizeof (pInfo->ProcessorCount);
+ 
+-  if (sysctlbyname (HW_NCPU_NAME, &pInfo->ProcessorCount, &len, NULL, 0) == -1)
+-    pInfo->ProcessorCount = 1;
++  //if (sysctlbyname (HW_NCPU_NAME, &pInfo->ProcessorCount, &len, NULL, 0) == -1)
++  pInfo->ProcessorCount = 1;
+ 
+   return WELS_THREAD_ERROR_OK;
+ 
