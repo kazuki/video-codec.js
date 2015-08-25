@@ -9,3 +9,4 @@ function try_patch() {
 (cd thor; try_patch ../thor.patch)
 (cd libvpx; try_patch ../libvpx.patch)
 (cd openh264; try_patch ../openh264.patch)
+(cd ogg; try_patch ../ogg.patch)
