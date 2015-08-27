@@ -18,7 +18,7 @@ OGG_LIB=$(OGG_DIR)/src/.libs/libogg.a
 DAALA_DIR=$(NATIVE_DIR)/daala
 DAALA_LIB=$(DAALA_DIR)/src/.libs/libdaalaenc.a $(DAALA_DIR)/src/.libs/libdaaladec.a
 
-TARGETS=$(LIBDE265_LIB) $(THOR_DUMMY_TARGET) $(LIBVPX_LIB) $(OPENH264_LIB) $(OGG_LIB) $(DAALA_LIB)
+TARGETS=$(LIBDE265_LIB) $(THOR_DUMMY_TARGET) $(LIBVPX_LIB) $(OPENH264_LIB) $(OGG_LIB) $(DAALA_LIB) test.js
 
 all: apply-patch $(TARGETS)
 clean:
@@ -31,6 +31,9 @@ clean:
 
 apply-patch:
 	cd $(NATIVE_DIR); ./apply-patch.sh
+
+test.js: *.ts
+	tsc --out test.js test.ts
 
 $(LIBDE265_LIB): $(LIBDE265_DIR)/Makefile
 	cd $(LIBDE265_DIR); emmake make
