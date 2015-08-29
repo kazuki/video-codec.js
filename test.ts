@@ -57,8 +57,8 @@ class Test {
     }
 
     _encode_and_decode() {
-        var encoder = new Worker('openh264_encoder.js');
-        var decoder = new Worker('openh264_decoder.js');
+        var encoder = new Encoder('openh264_encoder.js');
+        var decoder = new Decoder('openh264_decoder.js');
         this._open_reader().then(([reader, video_info]) => {
             this.src_video_info = video_info;
             this.src_renderer.init(video_info);
@@ -70,7 +70,21 @@ class Test {
                 reader.read().then((ev) => {
                     ++counter;
                     this.src_renderer.draw(ev);
-                    encoder.postMessage(ev);
+                    encoder.encode(ev).then((packet) => {
+                        if (packet.data) {
+                            decoder.decode(packet).then((frame) => {
+                                if (frame.data)
+                                    this.dst_renderer.draw(frame);
+                                encode_frame();
+                            }, (e) => {
+                                console.log('failed: decode', e);
+                            });
+                        } else {
+                            encode_frame();
+                        }
+                    }, (e) => {
+                        console.log('failed: encode', e);
+                    });
                     var now = Date.now();
                     if (now - start >= 1000) {
                         fps = counter / ((now - start) / 1000);
@@ -82,38 +96,16 @@ class Test {
                     console.log('read failed:', err);
                 });
             };
-            encoder.onmessage = (ev) => {
-                if (ev.data.status == 0) {
-                    this._update_src_stat(0, 0);
-                    encoder.onmessage = (ev) => {
-                        if (ev.data.status == 0) {
-                            if (ev.data.data) {
-                                decoder.postMessage({
-                                    data: ev.data.data
-                                }, [ev.data.data]);
-                            } else {
-                                encode_frame();
-                            }
-                        }
-                    };
-                    encode_frame();
-                } else {
-                    console.log('failed: encoder init', ev);
-                }
-            };
-            decoder.onmessage = (ev) => {
-                if (ev.data.status == 0) {
-                    if (ev.data.data) {
-                        this.dst_renderer.draw(ev.data);
-                    }
-                }
-                encode_frame();
-            };
-            encoder.postMessage({
+            encoder.setup({
                 width: video_info.width,
                 height: video_info.height,
                 fps_num: video_info.fps_num,
                 fps_den: video_info.fps_den,
+            }).then(() => {
+                this._update_src_stat(0, 0);
+                encode_frame();
+            }, (e) => {
+                console.log('failed: encoder init', e);
             });
         }, (e) => {
             alert('failed:' + e);
