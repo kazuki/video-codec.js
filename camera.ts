@@ -1,5 +1,4 @@
 /// <reference path="api.ts" />
-/// <reference path="typings/es6-Uint8ClampedArray.d.ts" />
 /// <reference path="typings/MediaStream.d.ts" />
 
 class Camera implements IReader {

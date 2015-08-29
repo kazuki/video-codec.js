@@ -11,6 +11,12 @@ LIBVPX_LIB=$(LIBVPX_DIR)/libvpx_g.a
 
 OPENH264_DIR=$(NATIVE_DIR)/openh264
 OPENH264_LIB=$(OPENH264_DIR)/libopenh264.a
+OPENH264_ENCODER=openh264_encoder.js
+OPENH264_ENCODER_DEPS=$(OPENH264_LIB) $(NATIVE_DIR)/openh264_binding.c openh264_encoder.ts
+OPENH264_ENCODER_EXPORTS='_WelsCreateSVCEncoder','_WelsSetupSVCEncoder','_SizeOfSFrameBSInfo','_SizeOfSSourcePicture','_SetupSSourcePicture','_WelsSVCEncoderEncodeFrame','_SetSSourcePictureTimestamp'
+OPENH264_DECODER=openh264_decoder.js
+OPENH264_DECODER_DEPS=$(OPENH264_LIB) $(NATIVE_DIR)/openh264_binding.c openh264_decoder.ts
+OPENH264_DECODER_EXPORTS='_WelsCreateDecoder','_WelsInitializeDecoder','_WelsDecoderDecodeFrame','_SizeOfSBufferInfo'
 
 OGG_DIR=$(NATIVE_DIR)/ogg
 OGG_LIB=$(OGG_DIR)/src/.libs/libogg.a
@@ -18,7 +24,9 @@ OGG_LIB=$(OGG_DIR)/src/.libs/libogg.a
 DAALA_DIR=$(NATIVE_DIR)/daala
 DAALA_LIB=$(DAALA_DIR)/src/.libs/libdaalaenc.a $(DAALA_DIR)/src/.libs/libdaaladec.a
 
-TARGETS=$(LIBDE265_LIB) $(THOR_DUMMY_TARGET) $(LIBVPX_LIB) $(OPENH264_LIB) $(OGG_LIB) $(DAALA_LIB) test.js
+EMCC_OPTS=-O3 --llvm-lto 1 --memory-init-file 0 -s BUILD_AS_WORKER=1 -s TOTAL_MEMORY=67108864
+
+TARGETS=$(LIBDE265_LIB) $(THOR_DUMMY_TARGET) $(LIBVPX_LIB) $(OPENH264_LIB) $(OGG_LIB) $(DAALA_LIB) $(OPENH264_ENCODER) $(OPENH264_DECODER) test.js
 
 all: apply-patch $(TARGETS)
 clean:
@@ -74,3 +82,11 @@ $(DAALA_DIR)/Makefile: $(DAALA_DIR)/configure $(OGG_LIB)
 
 $(DAALA_DIR)/configure:
 	cd $(DAALA_DIR); ./autogen.sh
+
+$(OPENH264_ENCODER): $(OPENH264_ENCODER_DEPS)
+	tsc --out .openh264_encoder.js openh264_encoder.ts && \
+	emcc -o $@ $(EMCC_OPTS) -s EXPORTED_FUNCTIONS="[$(OPENH264_ENCODER_EXPORTS)]" --post-js .openh264_encoder.js $(OPENH264_LIB) $(NATIVE_DIR)/openh264_binding.c
+
+$(OPENH264_DECODER): $(OPENH264_DECODER_DEPS)
+	tsc --out .openh264_decoder.js openh264_decoder.ts && \
+	emcc -o $@ $(EMCC_OPTS) -s EXPORTED_FUNCTIONS="[$(OPENH264_DECODER_EXPORTS)]" --post-js .openh264_decoder.js $(OPENH264_LIB) $(NATIVE_DIR)/openh264_binding.c

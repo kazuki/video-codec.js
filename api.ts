@@ -1,4 +1,5 @@
 /// <reference path="typings/es6-promise.d.ts" />
+/// <reference path="typings/es6-Uint8ClampedArray.d.ts" />
 
 interface VideoInfo {
     width: number;
@@ -24,4 +25,9 @@ interface IReader {
     open(args: any): Promise<VideoInfo>;
     read(): Promise<ReadEventArgs>;
     close(): void;
+}
+
+interface IRenderer {
+    init(info: VideoInfo): void;
+    draw(frame: VideoFrame): void;
 }

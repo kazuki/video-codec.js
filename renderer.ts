@@ -1,6 +1,6 @@
 /// <reference path="api.ts" />
 
-class Renderer {
+class Renderer implements IRenderer {
     _canvas: HTMLCanvasElement;
     
     constructor(canvas: HTMLCanvasElement) {
