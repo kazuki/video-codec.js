@@ -1,4 +1,4 @@
-/// <reference path="api.ts" />
+/// <reference path="api.d.ts" />
 
 class Renderer implements IRenderer {
     _canvas: HTMLCanvasElement;

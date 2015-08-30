@@ -1,4 +1,4 @@
-/// <reference path="api.ts" />
+/// <reference path="api.d.ts" />
 /// <reference path="typings/emscripten.d.ts" />
 
 declare function _WelsCreateDecoder(ptr: number): number;
@@ -39,8 +39,15 @@ class OpenH264Decoder {
         this.out = Module.HEAP32.subarray(this.out_ptr / 4,
                                           this.out_ptr / 4 + 3);
         this.worker.onmessage = (e: MessageEvent) => {
+            this._setup(e.data);
+        };
+    }
+
+    _setup(cfg: Packet) {
+        this.worker.onmessage = (e: MessageEvent) => {
             this._decode(e.data.data);
         };
+        this.worker.postMessage({status: 0});
     }
 
     _decode(data: ArrayBuffer) {

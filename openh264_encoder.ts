@@ -1,4 +1,4 @@
-/// <reference path="api.ts" />
+/// <reference path="api.d.ts" />
 /// <reference path="typings/emscripten.d.ts" />
 
 declare function _WelsCreateSVCEncoder(ptr: number): number;
@@ -55,7 +55,8 @@ class OpenH264Encoder {
         this.bsi = Module._malloc(_SizeOfSFrameBSInfo());
         _SetupSSourcePicture(this.pic, cfg.width, cfg.height, this.i420);
         this.worker.postMessage({
-            status: ret
+            status: ret,
+            data: null,
         });
     }
 

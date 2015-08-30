@@ -1,4 +1,4 @@
-/// <reference path="api.ts" />
+/// <reference path="api.d.ts" />
 /// <reference path="typings/MediaStream.d.ts" />
 
 class Camera implements IReader {

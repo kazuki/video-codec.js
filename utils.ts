@@ -1,49 +1,4 @@
-/// <reference path="typings/es6-promise.d.ts" />
-/// <reference path="typings/es6-Uint8ClampedArray.d.ts" />
-
-interface VideoInfo {
-    width: number;
-    height: number;
-    fps_num: number;
-    fps_den: number;
-}
-
-interface VideoFrame {
-    timestamp: number;
-    data: ArrayBuffer;
-    y: Uint8ClampedArray;
-    u: Uint8ClampedArray;
-    v: Uint8ClampedArray;
-    transferable: boolean;
-}
-
-interface ReadEventArgs extends VideoFrame {
-    ended: boolean;
-}
-
-interface IReader {
-    open(args: any): Promise<VideoInfo>;
-    read(): Promise<ReadEventArgs>;
-    close(): void;
-}
-
-interface IRenderer {
-    init(info: VideoInfo): void;
-    draw(frame: VideoFrame): void;
-}
-
-interface Packet {
-    data: ArrayBuffer;
-}
-
-interface IEncoder {
-    setup(cfg: VideoInfo): Promise<any>;
-    encode(frame: VideoFrame): Promise<Packet>;
-}
-
-interface IDecoder {
-    decode(packet: Packet): Promise<VideoFrame>;
-}
+/// <reference path="api.d.ts" />
 
 class Encoder implements IEncoder {
     worker: Worker;
@@ -88,6 +43,19 @@ class Decoder implements IDecoder {
 
     constructor(worker_script_path: string) {
         this.worker = new Worker(worker_script_path);
+    }
+
+    setup(cfg: Packet): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this.worker.onmessage = (ev) => {
+                if (ev.data.status == 0) {
+                    resolve(ev.data);
+                } else {
+                    reject(ev.data);
+                }
+            };
+            this.worker.postMessage(cfg);
+        });
     }
 
     decode(packet: Packet): Promise<VideoFrame> {

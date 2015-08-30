@@ -1,4 +1,5 @@
-/// <reference path="api.ts" />
+/// <reference path="api.d.ts" />
+/// <reference path="utils.ts" />
 /// <reference path="camera.ts" />
 /// <reference path="renderer.ts" />
 
@@ -57,8 +58,7 @@ class Test {
     }
 
     _encode_and_decode() {
-        var encoder = new Encoder('openh264_encoder.js');
-        var decoder = new Decoder('openh264_decoder.js');
+        var [encoder, decoder, encoder_cfg] = this._get_encoder_and_decoder();
         this._open_reader().then(([reader, video_info]) => {
             this.src_video_info = video_info;
             this.src_renderer.init(video_info);
@@ -101,15 +101,38 @@ class Test {
                 height: video_info.height,
                 fps_num: video_info.fps_num,
                 fps_den: video_info.fps_den,
-            }).then(() => {
+            }).then((packet) => {
                 this._update_src_stat(0, 0);
-                encode_frame();
+                decoder.setup(packet).then(() => {
+                    encode_frame();
+                }, (e) => {
+                    console.log('failed: decoder init', e);
+                });
             }, (e) => {
                 console.log('failed: encoder init', e);
             });
         }, (e) => {
             alert('failed:' + e);
         });
+    }
+
+    _get_encoder_and_decoder(): [IEncoder, IDecoder, any] {
+        var libname = (<HTMLSelectElement>document.getElementById('codec_type')).value;
+        if (libname == 'daala') {
+            return [
+                new Encoder('daala_encoder.js'),
+                new Decoder('daala_decoder.js'),
+                {}
+            ];
+        } else if (libname == 'openH264') {
+            return [
+                new Encoder('openh264_encoder.js'),
+                new Decoder('openh264_decoder.js'),
+                {}
+            ];
+        } else {
+            return [null, null, null];
+        }
     }
 
     _open_reader(): Promise<[IReader, VideoInfo]> {

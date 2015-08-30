@@ -13,7 +13,7 @@
       <fieldset>
         <legend>Input</legend>
         <div>
-          <input type="radio" name="input-type" id="input-camera">Camera
+          <input type="radio" name="input-type" id="input-camera" checked>Camera
           <select id="camera-resolution">
             <optgroup label="4:3">
               <option>320x240</option>
@@ -34,10 +34,19 @@
             </optgroup>
           </select>
         </div>
-        <div>
+        <!--<div>
           <input type="radio" name="input-type" id="input-file">File
           <input type="file" id="file-data">
-        </div>
+        </div>-->
+      </fieldset>
+      <fieldset>
+        <legend>Codec</legend>
+        <select id="codec_type">
+          <option>daala</option>
+          <!--<option>libvpx</option>-->
+          <option>openH264</option>
+          <!--<option>libde265</option>-->
+        </select>
       </fieldset>
     </div>
     <div>
