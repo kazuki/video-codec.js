@@ -2,6 +2,8 @@
 
 JavaScriptによる各種映像符号のエンコード／デコードサンプルです．
 
+Demo: https://kazuki.github.io/video-codec.js/index.html
+
 以下のライブラリを[emscripten](http://emscripten.org)を使ってJavaScriptにコンパイルし，利用しています．
 (括弧で囲まれているライブラリは将来サポート予定で現在はまだ対応していません)
 
