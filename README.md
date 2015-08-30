@@ -7,8 +7,8 @@ JavaScriptによる各種映像符号のエンコード／デコードサンプ�
 
 * [daala](https://xiph.org/daala/): Daala Encoder/Decoder
 * [openH264](http://www.openh264.org/): H.264 Encoder/Decoder
+* [libvpx](http://www.webmproject.org/): VP8/VP9/VP10 Encoder/Decoder
 * ([libde265](http://www.libde265.org/): H.265 Encoder/Decoder)
-* ([libvpx](http://www.webmproject.org/): VP8/VP9/VP10 Encoder/Decoder)
 * ([thor](https://github.com/cisco/thor): [Thor](https://tools.ietf.org/html/draft-fuldseth-netvc-thor) Encoder/Decoder)
 
 ## コンパイル方法

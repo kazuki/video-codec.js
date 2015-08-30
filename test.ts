@@ -124,6 +124,12 @@ class Test {
                 new Decoder('daala_decoder.js'),
                 {}
             ];
+        } else if (libname == 'libvpx') {
+            return [
+                new Encoder('vpx_encoder.js'),
+                new Decoder('vpx_decoder.js'),
+                {}
+            ];
         } else if (libname == 'openH264') {
             return [
                 new Encoder('openh264_encoder.js'),
