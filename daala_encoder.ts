@@ -51,11 +51,25 @@ class DaalaEncoder {
             this.worker.postMessage({status: -1});
             return;
         }
+
         var value = Module._malloc(4);
-        Module.setValue(value, 1, 'i32');
-        _daala_encode_ctl(this.encoder, 4002/*OD_SET_COMPLEXITY*/, value, 4);
-        Module.setValue(value, 10, 'i32');
-        _daala_encode_ctl(this.encoder, 4000/*OD_SET_QUANT*/, value, 4);
+        var int_cfg_map = {
+            'quant': 4000,
+            'complexity': 4002,
+            'use_activity_masking': 4006,
+            'qm': 4008,
+            'mc_use_chroma': 4100,
+            'mv_res_min': 4102,
+            'mv_level_min': 4104,
+            'mv_level_max': 4106,
+            'mc_use_satd': 4108,
+        };
+        for (var key in int_cfg_map) {
+            if (key in cfg.params) {
+                Module.setValue(value, cfg.params[key], 'i32');
+                _daala_encode_ctl(this.encoder, int_cfg_map[key], value, 4);
+            }
+        }
         Module._free(value);
 
         var packets = [];

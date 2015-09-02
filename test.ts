@@ -12,6 +12,7 @@ class Test {
     constructor() {}
 
     init () {
+        this._setup_config_ui();
         this.src_renderer = new Renderer(<HTMLCanvasElement>document.getElementById('source'));
         this.dst_renderer = new Renderer(<HTMLCanvasElement>document.getElementById('decoded'));
         this.src_stat = <HTMLDivElement>document.getElementById('src_info');
@@ -22,6 +23,42 @@ class Test {
         document.getElementById('encdec').addEventListener('click', () => {
             this._encode_and_decode();
         });
+    }
+
+    _setup_config_ui() {
+        var changed_codec_type = () => {
+            var name = (<HTMLSelectElement>document.getElementById('codec_type')).value;
+            var configs = {
+                'daala': document.getElementById('daala_config'),
+                'libvpx': document.getElementById('libvpx_config'),
+                'openH264': document.getElementById('openh264_config'),
+            };
+            for (var key in configs) {
+                configs[key].style.display = 'none';
+            }
+            configs[name].style.display = 'block';
+        };
+        document.getElementById('codec_type').addEventListener('change', () => {
+            changed_codec_type();
+        });
+
+        var daala_quant = <HTMLSelectElement>document.getElementById('daala_config_quant');
+        for (var i = 0; i <= 511; ++i) {
+            var opt = <HTMLOptionElement>document.createElement('option');
+            var text = i.toString();
+            opt.value = i.toString();
+            if (i == 0) {
+                text = "0 (lossless)";
+            } else if (i == 512) {
+                text = "511 (smallest)"
+            }
+            if (i == 20)
+                opt.selected = true;
+            opt.appendChild(document.createTextNode(text));
+            daala_quant.appendChild(opt);
+        }
+
+        changed_codec_type();
     }
 
     _play() {
@@ -101,6 +138,7 @@ class Test {
                 height: video_info.height,
                 fps_num: video_info.fps_num,
                 fps_den: video_info.fps_den,
+                params: encoder_cfg
             }).then((packet) => {
                 this._update_src_stat(0, 0);
                 decoder.setup(packet).then(() => {
@@ -122,7 +160,17 @@ class Test {
             return [
                 new Encoder('daala_encoder.js'),
                 new Decoder('daala_decoder.js'),
-                {}
+                {
+                    'quant': parseInt((<HTMLSelectElement>document.getElementById('daala_config_quant')).value, 10),
+                    'complexity': parseInt((<HTMLSelectElement>document.getElementById('daala_config_complexity')).value, 10),
+                    'use_activity_masking': (<HTMLInputElement>document.getElementById('daala_config_activity_masking')).checked ? 1 : 0,
+                    'qm': parseInt((<HTMLSelectElement>document.getElementById('daala_config_qm')).value, 10),
+                    'mc_use_chroma': (<HTMLInputElement>document.getElementById('daala_config_mc_use_chroma')).checked ? 1 : 0,
+                    'mv_res_min': parseInt((<HTMLSelectElement>document.getElementById('daala_config_mv_res_min')).value, 10),
+                    'mv_level_min': parseInt((<HTMLSelectElement>document.getElementById('daala_config_mv_level_min')).value, 10),
+                    'mv_level_max': parseInt((<HTMLSelectElement>document.getElementById('daala_config_mv_level_max')).value, 10),
+                    'mc_use_satd': (<HTMLInputElement>document.getElementById('daala_config_mc_use_chroma')).checked ? 1 : 0,
+                }
             ];
         } else if (libname == 'libvpx') {
             return [
