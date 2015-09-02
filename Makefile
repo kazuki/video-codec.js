@@ -2,6 +2,12 @@ NATIVE_DIR=./native
 
 LIBDE265_DIR=$(NATIVE_DIR)/libde265
 LIBDE265_LIB=$(LIBDE265_DIR)/libde265/.libs/libde265.a
+LIBDE265_ENCODER=libde265_encoder.js
+LIBDE265_DECODER=libde265_decoder.js
+LIBDE265_OPTS=-I$(LIBDE265_DIR) -s DEMANGLE_SUPPORT=1 -std=c++11 -s ASSERTIONS=1 -s SAFE_HEAP=1
+LIBDE265_DEPS=$(LIBDE265_LIB) $(NATIVE_DIR)/libde265_binding.cc
+LIBDE265_ENCODER_EXPORTS='_de265_init','_en265_new_encoder','_en265_start_encoder','_en265_push_image','_en265_push_eof','_en265_encode','_en265_get_packet','_en265_free_packet','_en265_free_encoder','_de265_free','_libde265_image_allocate','_libde265_image_get_plane','_libde265_image_get_stride','_libde265_encoder_hack'
+LIBDE265_DECODER_EXPORTS='_de265_new_decoder'
 
 THOR_DIR=$(NATIVE_DIR)/thor
 THOR_DUMMY_TARGET=$(THOR_DIR)/build/Thorenc $(THOR_DIR)/build/Thordec
@@ -38,7 +44,7 @@ DAALA_DECODER_EXPORTS='_daala_decode_header_in','_daala_decode_alloc','_daala_de
 
 EMCC_OPTS=-O3 --llvm-lto 1 --memory-init-file 0 -s BUILD_AS_WORKER=1 -s TOTAL_MEMORY=67108864
 
-TARGETS=$(LIBDE265_LIB) $(THOR_DUMMY_TARGET) $(LIBVPX_LIB) $(OPENH264_LIB) $(OGG_LIB) $(DAALA_LIB) $(OPENH264_ENCODER) $(OPENH264_DECODER) $(DAALA_ENCODER) $(DAALA_DECODER) $(LIBVPX_ENCODER) $(LIBVPX_DECODER) test.js
+TARGETS=$(LIBDE265_LIB) $(THOR_DUMMY_TARGET) $(LIBVPX_LIB) $(OPENH264_LIB) $(OGG_LIB) $(DAALA_LIB) $(OPENH264_ENCODER) $(OPENH264_DECODER) $(DAALA_ENCODER) $(DAALA_DECODER) $(LIBVPX_ENCODER) $(LIBVPX_DECODER) $(LIBDE265_ENCODER) $(LIBDE265_DECODER) test.js
 
 all: apply-patch $(TARGETS)
 clean:
@@ -118,3 +124,11 @@ $(LIBVPX_ENCODER): $(LIBVPX_DEPS) vpx_encoder.ts
 $(LIBVPX_DECODER): $(LIBVPX_DEPS) vpx_decoder.ts
 	tsc --out .vpx_decoder.js vpx_decoder.ts && \
 	emcc -o $@ $(EMCC_OPTS) -s EXPORTED_FUNCTIONS="[$(LIBVPX_DECODER_EXPORTS)]" --post-js .vpx_decoder.js $(LIBVPX_DEPS)
+
+$(LIBDE265_ENCODER): $(LIBDE265_DEPS) libde265_encoder.ts
+	tsc --out .libde265_encoder.js libde265_encoder.ts && \
+	emcc -o $@ $(EMCC_OPTS) $(LIBDE265_OPTS) -s EXPORTED_FUNCTIONS="[$(LIBDE265_ENCODER_EXPORTS)]" --post-js .libde265_encoder.js $(LIBDE265_DEPS)
+
+$(LIBDE265_DECODER): $(LIBDE265_DEPS) libde265_decoder.ts
+	tsc --out .libde265_decoder.js libde265_decoder.ts && \
+	emcc -o $@ $(EMCC_OPTS) $(LIBDE265_OPTS) -s EXPORTED_FUNCTIONS="[$(LIBDE265_DECODER_EXPORTS)]" --post-js .libde265_decoder.js $(LIBDE265_DEPS)

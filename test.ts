@@ -136,6 +136,12 @@ class Test {
                 new Decoder('openh264_decoder.js'),
                 {}
             ];
+        } else if (libname == 'libde265') {
+            return [
+                new Encoder('libde265_encoder.js'),
+                new Decoder('libde265_decoder.js'),
+                {}
+            ];
         } else {
             return [null, null, null];
         }
