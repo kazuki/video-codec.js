@@ -2,6 +2,12 @@ NATIVE_DIR=./native
 
 LIBDE265_DIR=$(NATIVE_DIR)/libde265
 LIBDE265_LIB=$(LIBDE265_DIR)/libde265/.libs/libde265.a
+LIBDE265_ENCODER=libde265_encoder.js
+LIBDE265_DECODER=libde265_decoder.js
+LIBDE265_OPTS=-I$(LIBDE265_DIR) -s DEMANGLE_SUPPORT=1 -std=c++11 -s ASSERTIONS=1 -s SAFE_HEAP=1
+LIBDE265_DEPS=$(LIBDE265_LIB) $(NATIVE_DIR)/libde265_binding.cc
+LIBDE265_ENCODER_EXPORTS='_de265_init','_en265_new_encoder','_en265_start_encoder','_en265_push_image','_en265_push_eof','_en265_encode','_en265_get_packet','_en265_free_packet','_en265_free_encoder','_de265_free','_libde265_image_allocate','_libde265_image_get_plane','_libde265_image_get_stride','_libde265_encoder_hack'
+LIBDE265_DECODER_EXPORTS='_de265_new_decoder'
 
 THOR_DIR=$(NATIVE_DIR)/thor
 THOR_DUMMY_TARGET=$(THOR_DIR)/build/Thorenc $(THOR_DIR)/build/Thordec
@@ -36,9 +42,10 @@ DAALA_DECODER_DEPS=$(DAALA_LIB) $(NATIVE_DIR)/daala_binding.c
 DAALA_ENCODER_EXPORTS='_daala_encode_create','_daala_encode_ctl','_daala_encode_flush_header','_daala_encode_img_in','_daala_encode_packet_out','_daala_info_create','_daala_info_init','_daala_comment_create','_od_state_init','_od_img_create','_od_quantizer_to_codedquantizer','_od_apply_prefilter_frame_sbs','_od_apply_qm','_od_ec_tell_frac','_od_hv_intra_pred','_od_raster_to_coding_order','_od_log_matrix_uchar','_EXP_CDF_TABLE'
 DAALA_DECODER_EXPORTS='_daala_decode_header_in','_daala_decode_alloc','_daala_decode_packet_in','_daala_setup_free','_daala_info_create','_daala_info_init','_daala_comment_create','_od_img_create','_oggbyte_readcopy','_od_state_init','_od_accounting_init','_od_ec_dec_init','_od_codedquantizer_to_quantizer','_generic_decode_','_od_hv_intra_pred','_od_raster_to_coding_order','_od_qm_get_index','_od_pvq_decode','_od_postfilter_split'
 
-EMCC_OPTS=-O3 --llvm-lto 1 --memory-init-file 0 -s BUILD_AS_WORKER=1 -s TOTAL_MEMORY=67108864
+EMCC_OPTS=-O3 --llvm-lto 1 --memory-init-file 0 -s BUILD_AS_WORKER=1 -s TOTAL_MEMORY=67108864 \
+          -s NO_FILESYSTEM=1 -s NO_BROWSER=1 -s EXPORTED_FUNCTIONS="['_malloc']" -s EXPORTED_RUNTIME_METHODS="['setValue', 'getValue']"
 
-TARGETS=$(LIBDE265_LIB) $(THOR_DUMMY_TARGET) $(LIBVPX_LIB) $(OPENH264_LIB) $(OGG_LIB) $(DAALA_LIB) $(OPENH264_ENCODER) $(OPENH264_DECODER) $(DAALA_ENCODER) $(DAALA_DECODER) $(LIBVPX_ENCODER) $(LIBVPX_DECODER) test.js
+TARGETS=$(LIBDE265_LIB) $(THOR_DUMMY_TARGET) $(LIBVPX_LIB) $(OPENH264_LIB) $(OGG_LIB) $(DAALA_LIB) $(OPENH264_ENCODER) $(OPENH264_DECODER) $(DAALA_ENCODER) $(DAALA_DECODER) $(LIBVPX_ENCODER) $(LIBVPX_DECODER) $(LIBDE265_ENCODER) $(LIBDE265_DECODER) test.js
 
 all: apply-patch $(TARGETS)
 clean:
@@ -118,3 +125,11 @@ $(LIBVPX_ENCODER): $(LIBVPX_DEPS) vpx_encoder.ts
 $(LIBVPX_DECODER): $(LIBVPX_DEPS) vpx_decoder.ts
 	tsc --out .vpx_decoder.js vpx_decoder.ts && \
 	emcc -o $@ $(EMCC_OPTS) -s EXPORTED_FUNCTIONS="[$(LIBVPX_DECODER_EXPORTS)]" --post-js .vpx_decoder.js $(LIBVPX_DEPS)
+
+$(LIBDE265_ENCODER): $(LIBDE265_DEPS) libde265_encoder.ts
+	tsc --out .libde265_encoder.js libde265_encoder.ts && \
+	emcc -o $@ $(EMCC_OPTS) $(LIBDE265_OPTS) -s EXPORTED_FUNCTIONS="[$(LIBDE265_ENCODER_EXPORTS)]" --post-js .libde265_encoder.js $(LIBDE265_DEPS)
+
+$(LIBDE265_DECODER): $(LIBDE265_DEPS) libde265_decoder.ts
+	tsc --out .libde265_decoder.js libde265_decoder.ts && \
+	emcc -o $@ $(EMCC_OPTS) $(LIBDE265_OPTS) -s EXPORTED_FUNCTIONS="[$(LIBDE265_DECODER_EXPORTS)]" --post-js .libde265_decoder.js $(LIBDE265_DEPS)

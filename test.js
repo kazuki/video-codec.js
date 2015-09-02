@@ -246,6 +246,7 @@ var Test = (function () {
     }
     Test.prototype.init = function () {
         var _this = this;
+        this._setup_config_ui();
         this.src_renderer = new Renderer(document.getElementById('source'));
         this.dst_renderer = new Renderer(document.getElementById('decoded'));
         this.src_stat = document.getElementById('src_info');
@@ -255,6 +256,40 @@ var Test = (function () {
         document.getElementById('encdec').addEventListener('click', function () {
             _this._encode_and_decode();
         });
+    };
+    Test.prototype._setup_config_ui = function () {
+        var changed_codec_type = function () {
+            var name = document.getElementById('codec_type').value;
+            var configs = {
+                'daala': document.getElementById('daala_config'),
+                'libvpx': document.getElementById('libvpx_config'),
+                'openH264': document.getElementById('openh264_config')
+            };
+            for (var key in configs) {
+                configs[key].style.display = 'none';
+            }
+            configs[name].style.display = 'block';
+        };
+        document.getElementById('codec_type').addEventListener('change', function () {
+            changed_codec_type();
+        });
+        var daala_quant = document.getElementById('daala_config_quant');
+        for (var i = 0; i <= 511; ++i) {
+            var opt = document.createElement('option');
+            var text = i.toString();
+            opt.value = i.toString();
+            if (i == 0) {
+                text = "0 (lossless)";
+            }
+            else if (i == 512) {
+                text = "511 (smallest)";
+            }
+            if (i == 20)
+                opt.selected = true;
+            opt.appendChild(document.createTextNode(text));
+            daala_quant.appendChild(opt);
+        }
+        changed_codec_type();
     };
     Test.prototype._play = function () {
         var _this = this;
@@ -335,7 +370,8 @@ var Test = (function () {
                 width: video_info.width,
                 height: video_info.height,
                 fps_num: video_info.fps_num,
-                fps_den: video_info.fps_den
+                fps_den: video_info.fps_den,
+                params: encoder_cfg
             }).then(function (packet) {
                 _this._update_src_stat(0, 0);
                 decoder.setup(packet).then(function () {
@@ -356,7 +392,17 @@ var Test = (function () {
             return [
                 new Encoder('daala_encoder.js'),
                 new Decoder('daala_decoder.js'),
-                {}
+                {
+                    'quant': parseInt(document.getElementById('daala_config_quant').value, 10),
+                    'complexity': parseInt(document.getElementById('daala_config_complexity').value, 10),
+                    'use_activity_masking': document.getElementById('daala_config_activity_masking').checked ? 1 : 0,
+                    'qm': parseInt(document.getElementById('daala_config_qm').value, 10),
+                    'mc_use_chroma': document.getElementById('daala_config_mc_use_chroma').checked ? 1 : 0,
+                    'mv_res_min': parseInt(document.getElementById('daala_config_mv_res_min').value, 10),
+                    'mv_level_min': parseInt(document.getElementById('daala_config_mv_level_min').value, 10),
+                    'mv_level_max': parseInt(document.getElementById('daala_config_mv_level_max').value, 10),
+                    'mc_use_satd': document.getElementById('daala_config_mc_use_chroma').checked ? 1 : 0
+                }
             ];
         }
         else if (libname == 'libvpx') {
@@ -370,6 +416,13 @@ var Test = (function () {
             return [
                 new Encoder('openh264_encoder.js'),
                 new Decoder('openh264_decoder.js'),
+                {}
+            ];
+        }
+        else if (libname == 'libde265') {
+            return [
+                new Encoder('libde265_encoder.js'),
+                new Decoder('libde265_decoder.js'),
                 {}
             ];
         }
