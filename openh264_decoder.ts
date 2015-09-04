@@ -39,11 +39,11 @@ class OpenH264Decoder {
         this.out = Module.HEAP32.subarray(this.out_ptr / 4,
                                           this.out_ptr / 4 + 3);
         this.worker.onmessage = (e: MessageEvent) => {
-            this._setup(e.data);
+            this._setup();
         };
     }
 
-    _setup(cfg: Packet) {
+    _setup() {
         this.worker.onmessage = (e: MessageEvent) => {
             this._decode(e.data.data);
         };

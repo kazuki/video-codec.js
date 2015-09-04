@@ -22,7 +22,7 @@ class DaalaDecoder {
     constructor(worker: Worker) {
         this.worker = worker;
         this.worker.onmessage = (e: MessageEvent) => {
-            this._setup(e.data);
+            this._setup(e.data.packet);
         };
         this.op = Module._malloc(4 * 8);
         this._check_op_data_size(1024 * 16);

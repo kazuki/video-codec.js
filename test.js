@@ -42,7 +42,7 @@ var Decoder = (function () {
     function Decoder(worker_script_path) {
         this.worker = new Worker(worker_script_path);
     }
-    Decoder.prototype.setup = function (cfg) {
+    Decoder.prototype.setup = function (cfg, packet) {
         var _this = this;
         return new Promise(function (resolve, reject) {
             _this.worker.onmessage = function (ev) {
@@ -53,7 +53,10 @@ var Decoder = (function () {
                     reject(ev.data);
                 }
             };
-            _this.worker.postMessage(cfg);
+            _this.worker.postMessage({
+                params: cfg,
+                packet: packet
+            });
         });
     };
     Decoder.prototype.decode = function (packet) {
@@ -258,8 +261,9 @@ var Test = (function () {
         });
     };
     Test.prototype._setup_config_ui = function () {
+        var _this = this;
         var changed_codec_type = function () {
-            var name = document.getElementById('codec_type').value;
+            var name = _this._getSelectElement('codec_type').value;
             var configs = {
                 'daala': document.getElementById('daala_config'),
                 'libvpx': document.getElementById('libvpx_config'),
@@ -268,12 +272,17 @@ var Test = (function () {
             for (var key in configs) {
                 configs[key].style.display = 'none';
             }
+            if (name == 'libvpx')
+                _this._changed_libvpx_codec_version();
             configs[name].style.display = 'block';
         };
         document.getElementById('codec_type').addEventListener('change', function () {
             changed_codec_type();
         });
-        var daala_quant = document.getElementById('daala_config_quant');
+        document.getElementById('libvpx_config_codec').addEventListener('change', function () {
+            _this._changed_libvpx_codec_version();
+        });
+        var daala_quant = this._getSelectElement('daala_config_quant');
         for (var i = 0; i <= 511; ++i) {
             var opt = document.createElement('option');
             var text = i.toString();
@@ -290,6 +299,33 @@ var Test = (function () {
             daala_quant.appendChild(opt);
         }
         changed_codec_type();
+    };
+    Test.prototype._changed_libvpx_codec_version = function () {
+        var ver = parseInt(this._getSelectElement('libvpx_config_codec').value, 10);
+        var cpuused_range = 8;
+        if (ver == 8) {
+            cpuused_range = 16;
+        }
+        var clear_all_children = function (element) {
+            while (element.firstChild)
+                element.removeChild(element.firstChild);
+        };
+        var cpuused_select = this._getSelectElement('libvpx_config_cpuused');
+        clear_all_children(cpuused_select);
+        for (var i = 0; i <= cpuused_range; ++i) {
+            var opt = document.createElement('option');
+            var txt = i.toString();
+            opt.value = txt;
+            if (i == 0) {
+                txt += " (slow)";
+            }
+            else if (i == cpuused_range) {
+                txt += " (fast)";
+                opt.selected = true;
+            }
+            opt.appendChild(document.createTextNode(txt));
+            cpuused_select.appendChild(opt);
+        }
     };
     Test.prototype._play = function () {
         var _this = this;
@@ -326,7 +362,7 @@ var Test = (function () {
     };
     Test.prototype._encode_and_decode = function () {
         var _this = this;
-        var _a = this._get_encoder_and_decoder(), encoder = _a[0], decoder = _a[1], encoder_cfg = _a[2];
+        var _a = this._get_encoder_and_decoder(), encoder = _a[0], decoder = _a[1], encoder_cfg = _a[2], decoder_cfg = _a[3];
         this._open_reader().then(function (_a) {
             var reader = _a[0], video_info = _a[1];
             _this.src_video_info = video_info;
@@ -374,7 +410,7 @@ var Test = (function () {
                 params: encoder_cfg
             }).then(function (packet) {
                 _this._update_src_stat(0, 0);
-                decoder.setup(packet).then(function () {
+                decoder.setup(decoder_cfg, packet).then(function () {
                     encode_frame();
                 }, function (e) {
                     console.log('failed: decoder init', e);
@@ -387,35 +423,44 @@ var Test = (function () {
         });
     };
     Test.prototype._get_encoder_and_decoder = function () {
-        var libname = document.getElementById('codec_type').value;
+        var libname = this._getSelectElement('codec_type').value;
         if (libname == 'daala') {
             return [
                 new Encoder('daala_encoder.js'),
                 new Decoder('daala_decoder.js'),
                 {
-                    'quant': parseInt(document.getElementById('daala_config_quant').value, 10),
-                    'complexity': parseInt(document.getElementById('daala_config_complexity').value, 10),
+                    'quant': parseInt(this._getSelectElement('daala_config_quant').value, 10),
+                    'complexity': parseInt(this._getSelectElement('daala_config_complexity').value, 10),
                     'use_activity_masking': document.getElementById('daala_config_activity_masking').checked ? 1 : 0,
-                    'qm': parseInt(document.getElementById('daala_config_qm').value, 10),
+                    'qm': parseInt(this._getSelectElement('daala_config_qm').value, 10),
                     'mc_use_chroma': document.getElementById('daala_config_mc_use_chroma').checked ? 1 : 0,
-                    'mv_res_min': parseInt(document.getElementById('daala_config_mv_res_min').value, 10),
-                    'mv_level_min': parseInt(document.getElementById('daala_config_mv_level_min').value, 10),
-                    'mv_level_max': parseInt(document.getElementById('daala_config_mv_level_max').value, 10),
+                    'mv_res_min': parseInt(this._getSelectElement('daala_config_mv_res_min').value, 10),
+                    'mv_level_min': parseInt(this._getSelectElement('daala_config_mv_level_min').value, 10),
+                    'mv_level_max': parseInt(this._getSelectElement('daala_config_mv_level_max').value, 10),
                     'mc_use_satd': document.getElementById('daala_config_mc_use_chroma').checked ? 1 : 0
-                }
+                },
+                {}
             ];
         }
         else if (libname == 'libvpx') {
+            var ver = parseInt(this._getSelectElement('libvpx_config_codec').value, 10);
             return [
                 new Encoder('vpx_encoder.js'),
                 new Decoder('vpx_decoder.js'),
-                {}
+                {
+                    'version': ver,
+                    'cpuused': parseInt(this._getSelectElement('libvpx_config_cpuused').value, 10)
+                },
+                {
+                    'version': ver
+                }
             ];
         }
         else if (libname == 'openH264') {
             return [
                 new Encoder('openh264_encoder.js'),
                 new Decoder('openh264_decoder.js'),
+                {},
                 {}
             ];
         }
@@ -423,15 +468,16 @@ var Test = (function () {
             return [
                 new Encoder('libde265_encoder.js'),
                 new Decoder('libde265_decoder.js'),
+                {},
                 {}
             ];
         }
         else {
-            return [null, null, null];
+            return [null, null, null, null];
         }
     };
     Test.prototype._open_reader = function () {
-        var resolution = document.getElementById('camera-resolution').value.split('x');
+        var resolution = this._getSelectElement('camera-resolution').value.split('x');
         var width = parseInt(resolution[0]), height = parseInt(resolution[1]);
         return new Promise(function (resolve, reject) {
             var reader = new Camera();
@@ -456,6 +502,9 @@ var Test = (function () {
         var s = ('0' + (Math.floor(timestamp) % 60)).substr(-2);
         var ms = ('00' + (timestamp * 1000).toFixed(0)).substr(-3);
         return m + ':' + s + '.' + ms;
+    };
+    Test.prototype._getSelectElement = function (id) {
+        return document.getElementById(id);
     };
     return Test;
 })();

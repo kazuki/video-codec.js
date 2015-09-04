@@ -45,7 +45,7 @@ class Decoder implements IDecoder {
         this.worker = new Worker(worker_script_path);
     }
 
-    setup(cfg: Packet): Promise<any> {
+    setup(cfg: any, packet: Packet): Promise<any> {
         return new Promise((resolve, reject) => {
             this.worker.onmessage = (ev) => {
                 if (ev.data.status == 0) {
@@ -54,7 +54,10 @@ class Decoder implements IDecoder {
                     reject(ev.data);
                 }
             };
-            this.worker.postMessage(cfg);
+            this.worker.postMessage({
+                params: cfg,
+                packet: packet,
+            });
         });
     }
 

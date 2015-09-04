@@ -6,11 +6,11 @@ class libde265Decoder {
     constructor(worker: Worker) {
         this.worker = worker;
         this.worker.onmessage = (e: MessageEvent) => {
-            this._setup(e.data);
+            this._setup(e.data.packet);
         };
     }
 
-    _setup(cfg: Packet) {
+    _setup(packet: Packet) {
         this.worker.onmessage = (e: MessageEvent) => {
             this._decode(e.data);
         };

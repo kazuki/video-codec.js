@@ -27,7 +27,7 @@ class Test {
 
     _setup_config_ui() {
         var changed_codec_type = () => {
-            var name = (<HTMLSelectElement>document.getElementById('codec_type')).value;
+            var name = this._getSelectElement('codec_type').value;
             var configs = {
                 'daala': document.getElementById('daala_config'),
                 'libvpx': document.getElementById('libvpx_config'),
@@ -36,13 +36,18 @@ class Test {
             for (var key in configs) {
                 configs[key].style.display = 'none';
             }
+            if (name == 'libvpx')
+                this._changed_libvpx_codec_version();
             configs[name].style.display = 'block';
         };
         document.getElementById('codec_type').addEventListener('change', () => {
             changed_codec_type();
         });
+        document.getElementById('libvpx_config_codec').addEventListener('change', () => {
+            this._changed_libvpx_codec_version();
+        });
 
-        var daala_quant = <HTMLSelectElement>document.getElementById('daala_config_quant');
+        var daala_quant = this._getSelectElement('daala_config_quant');
         for (var i = 0; i <= 511; ++i) {
             var opt = <HTMLOptionElement>document.createElement('option');
             var text = i.toString();
@@ -59,6 +64,35 @@ class Test {
         }
 
         changed_codec_type();
+    }
+
+    _changed_libvpx_codec_version() {
+        var ver = parseInt(this._getSelectElement('libvpx_config_codec').value, 10);
+        var cpuused_range = 8;
+        if (ver == 8) {
+            cpuused_range = 16;
+        }
+
+        var clear_all_children = (element: HTMLElement) => {
+            while (element.firstChild)
+                element.removeChild(element.firstChild);
+        };
+
+        var cpuused_select = this._getSelectElement('libvpx_config_cpuused');
+        clear_all_children(cpuused_select);
+        for (var i = 0; i <= cpuused_range; ++i) {
+            var opt = <HTMLOptionElement>document.createElement('option');
+            var txt = i.toString();
+            opt.value = txt;
+            if (i == 0) {
+                txt += " (slow)";
+            } else if (i == cpuused_range) {
+                txt += " (fast)";
+                opt.selected = true;
+            }
+            opt.appendChild(document.createTextNode(txt));
+            cpuused_select.appendChild(opt);
+        }
     }
 
     _play() {
@@ -95,7 +129,7 @@ class Test {
     }
 
     _encode_and_decode() {
-        var [encoder, decoder, encoder_cfg] = this._get_encoder_and_decoder();
+        var [encoder, decoder, encoder_cfg, decoder_cfg] = this._get_encoder_and_decoder();
         this._open_reader().then(([reader, video_info]) => {
             this.src_video_info = video_info;
             this.src_renderer.init(video_info);
@@ -141,7 +175,7 @@ class Test {
                 params: encoder_cfg
             }).then((packet) => {
                 this._update_src_stat(0, 0);
-                decoder.setup(packet).then(() => {
+                decoder.setup(decoder_cfg, packet).then(() => {
                     encode_frame();
                 }, (e) => {
                     console.log('failed: decoder init', e);
@@ -154,49 +188,59 @@ class Test {
         });
     }
 
-    _get_encoder_and_decoder(): [IEncoder, IDecoder, any] {
-        var libname = (<HTMLSelectElement>document.getElementById('codec_type')).value;
+    _get_encoder_and_decoder(): [IEncoder, IDecoder, any, any] {
+        var libname = this._getSelectElement('codec_type').value;
         if (libname == 'daala') {
             return [
                 new Encoder('daala_encoder.js'),
                 new Decoder('daala_decoder.js'),
                 {
-                    'quant': parseInt((<HTMLSelectElement>document.getElementById('daala_config_quant')).value, 10),
-                    'complexity': parseInt((<HTMLSelectElement>document.getElementById('daala_config_complexity')).value, 10),
+                    'quant': parseInt(this._getSelectElement('daala_config_quant').value, 10),
+                    'complexity': parseInt(this._getSelectElement('daala_config_complexity').value, 10),
                     'use_activity_masking': (<HTMLInputElement>document.getElementById('daala_config_activity_masking')).checked ? 1 : 0,
-                    'qm': parseInt((<HTMLSelectElement>document.getElementById('daala_config_qm')).value, 10),
+                    'qm': parseInt(this._getSelectElement('daala_config_qm').value, 10),
                     'mc_use_chroma': (<HTMLInputElement>document.getElementById('daala_config_mc_use_chroma')).checked ? 1 : 0,
-                    'mv_res_min': parseInt((<HTMLSelectElement>document.getElementById('daala_config_mv_res_min')).value, 10),
-                    'mv_level_min': parseInt((<HTMLSelectElement>document.getElementById('daala_config_mv_level_min')).value, 10),
-                    'mv_level_max': parseInt((<HTMLSelectElement>document.getElementById('daala_config_mv_level_max')).value, 10),
+                    'mv_res_min': parseInt(this._getSelectElement('daala_config_mv_res_min').value, 10),
+                    'mv_level_min': parseInt(this._getSelectElement('daala_config_mv_level_min').value, 10),
+                    'mv_level_max': parseInt(this._getSelectElement('daala_config_mv_level_max').value, 10),
                     'mc_use_satd': (<HTMLInputElement>document.getElementById('daala_config_mc_use_chroma')).checked ? 1 : 0,
-                }
+                },
+                {}
             ];
         } else if (libname == 'libvpx') {
+            var ver = parseInt(this._getSelectElement('libvpx_config_codec').value, 10);
             return [
                 new Encoder('vpx_encoder.js'),
                 new Decoder('vpx_decoder.js'),
-                {}
+                {
+                    'version': ver,
+                    'cpuused': parseInt(this._getSelectElement('libvpx_config_cpuused').value, 10),
+                },
+                {
+                    'version': ver,
+                }
             ];
         } else if (libname == 'openH264') {
             return [
                 new Encoder('openh264_encoder.js'),
                 new Decoder('openh264_decoder.js'),
+                {},
                 {}
             ];
         } else if (libname == 'libde265') {
             return [
                 new Encoder('libde265_encoder.js'),
                 new Decoder('libde265_decoder.js'),
+                {},
                 {}
             ];
         } else {
-            return [null, null, null];
+            return [null, null, null, null];
         }
     }
 
     _open_reader(): Promise<[IReader, VideoInfo]> {
-        var resolution = (<HTMLSelectElement>document.getElementById('camera-resolution')).value.split('x');
+        var resolution = this._getSelectElement('camera-resolution').value.split('x');
         var width = parseInt(resolution[0]), height = parseInt(resolution[1]);
         return new Promise((resolve, reject) => {
             var reader = new Camera();
@@ -223,6 +267,10 @@ class Test {
         var s = ('0' + (Math.floor(timestamp) % 60)).substr(-2);
         var ms = ('00' + (timestamp * 1000).toFixed(0)).substr(-3);
         return m + ':' + s + '.' + ms;
+    }
+
+    _getSelectElement(id: string): HTMLSelectElement {
+        return <HTMLSelectElement>document.getElementById(id);
     }
 }
 

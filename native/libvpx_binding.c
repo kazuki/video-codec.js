@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include "libvpx/vpx/vp8cx.h"
 #include "libvpx/vpx/vpx_encoder.h"
 #include "libvpx/vpx/vpx_decoder.h"
 
@@ -16,6 +17,8 @@ vpx_codec_enc_cfg_t *vpx_codec_enc_create_config(vpx_codec_iface_t *iface,
     cfg->g_h = height;
     cfg->g_pass = VPX_RC_ONE_PASS;
     cfg->g_threads = 1;
+    if (cfg->g_lag_in_frames > 4)
+        cfg->g_lag_in_frames = 4; // near-realtime
     cfg->g_timebase.num = timebase_num;
     cfg->g_timebase.den = timebase_den;
     cfg->rc_target_bitrate = target_bitrate;
