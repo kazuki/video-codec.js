@@ -54,6 +54,7 @@ clean:
 	(cd $(LIBVPX_DIR);  rm -rf *; git reset --hard); \
 	(cd $(OPENH264_DIR);  rm -rf *; git reset --hard); \
 	(cd $(DAALA_DIR);  rm -rf *; git reset --hard); \
+	(cd $(OGG_DIR);  rm -rf *; git reset --hard); \
 	rm -f $(TARGETS)
 
 apply-patch:
