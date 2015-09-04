@@ -42,6 +42,6 @@ interface IEncoder {
 }
 
 interface IDecoder {
-    setup(cfg: Packet): Promise<any>;
+    setup(cfg: any, packet: Packet): Promise<any>;
     decode(packet: Packet): Promise<VideoFrame>;
 }

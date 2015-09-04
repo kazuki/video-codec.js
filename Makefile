@@ -17,7 +17,7 @@ LIBVPX_LIB=$(LIBVPX_DIR)/libvpx_g.a
 LIBVPX_ENCODER=vpx_encoder.js
 LIBVPX_DECODER=vpx_decoder.js
 LIBVPX_DEPS=$(LIBVPX_LIB) $(NATIVE_DIR)/libvpx_binding.c
-LIBVPX_ENCODER_EXPORTS='_vpx_codec_vp8_cx','_vpx_codec_vp9_cx','_vpx_codec_vp10_cx','_vpx_codec_enc_init2','_vpx_codec_encode','_vpx_codec_get_cx_data','_vpx_img_alloc','_vpx_codec_enc_create_config','_allocate_vpx_codec_ctx','_vpx_codec_error','_vpx_codec_error_detail'
+LIBVPX_ENCODER_EXPORTS='_vpx_codec_vp8_cx','_vpx_codec_vp9_cx','_vpx_codec_vp10_cx','_vpx_codec_enc_init2','_vpx_codec_encode','_vpx_codec_get_cx_data','_vpx_img_alloc','_vpx_codec_enc_create_config','_allocate_vpx_codec_ctx','_vpx_codec_control_'
 LIBVPX_DECODER_EXPORTS='_vpx_codec_vp8_dx','_vpx_codec_vp9_dx','_vpx_codec_vp10_dx','_vpx_codec_dec_init2','_allocate_vpx_codec_ctx','_vpx_codec_dec_init_ver','_vpx_codec_decode','_vpx_codec_get_frame'
 
 OPENH264_DIR=$(NATIVE_DIR)/openh264

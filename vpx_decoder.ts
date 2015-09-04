@@ -20,16 +20,20 @@ class VPXDecoder {
     constructor(worker: Worker) {
         this.worker = worker;
         this.worker.onmessage = (e: MessageEvent) => {
-            this._setup(e.data);
+            this._setup(e.data.params, e.data.packet);
         };
         this._check_buf_size(1024 * 16);
         this.iter = Module._malloc(4);
     }
 
-    _setup(cfg: Packet) {
-        this.iface = _vpx_codec_vp8_dx();
-        //this.iface = _vpx_codec_vp9_dx();
-        //this.iface = _vpx_codec_vp10_dx();
+    _setup(cfg: any, packet: Packet) {
+        if (cfg.version == 10) {
+            this.iface = _vpx_codec_vp10_dx();
+        } else if (cfg.version == 9) {
+            this.iface = _vpx_codec_vp9_dx();
+        } else {
+            this.iface = _vpx_codec_vp8_dx();
+        }
 
         this.ctx = _allocate_vpx_codec_ctx();
         if (_vpx_codec_dec_init2(this.ctx, this.iface, 0, 0)) {

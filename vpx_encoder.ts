@@ -12,8 +12,7 @@ declare function _allocate_vpx_codec_ctx(): number;
 declare function _vpx_img_alloc(img: number, fmt: number, width: number, height: number, align: number): number;
 declare function _vpx_codec_encode(ctx: number, img: number, pts_lo: number, pts_hi: number, duration: number, flags: number, deadline: number): number;
 declare function _vpx_codec_get_cx_data(ctx: number, iter: number): number;
-declare function _vpx_codec_error(ctx: number): number;
-declare function _vpx_codec_error_detail(ctx: number): number;
+declare function _vpx_codec_control_(ctx: number, ctrl_id: number, value: number): number;
 
 class VPXEncoder {
     worker: Worker;
@@ -28,16 +27,20 @@ class VPXEncoder {
     constructor(worker: Worker) {
         this.worker = worker;
         this.worker.onmessage = (e: MessageEvent) => {
-            this._setup(e.data);
+            this._setup(e.data, e.data.params);
         };
     }
 
-    _setup(cfg: VideoInfo) {
-        this.iface = _vpx_codec_vp8_cx();
-        //this.iface = _vpx_codec_vp9_cx();
-        //this.iface = _vpx_codec_vp10_cx();
+    _setup(vi: VideoInfo, cfg: any) {
+        if (cfg.version == 10) {
+            this.iface = _vpx_codec_vp10_cx();
+        } else if (cfg.version == 9) {
+            this.iface = _vpx_codec_vp9_cx();
+        } else {
+            this.iface = _vpx_codec_vp8_cx();
+        }
 
-        var config = _vpx_codec_enc_create_config(this.iface, cfg.width, cfg.height,
+        var config = _vpx_codec_enc_create_config(this.iface, vi.width, vi.height,
                                                   1, 1000, 1000000);
         this.ctx = _allocate_vpx_codec_ctx();
         if (_vpx_codec_enc_init2(this.ctx, this.iface, config, 0)) {
@@ -45,14 +48,26 @@ class VPXEncoder {
             return;
         }
 
+        var value = Module._malloc(4);
+        var int_configs = {
+            'cpuused': 13,
+        };
+        for (var key in int_configs) {
+            if (key in cfg) {
+                Module.setValue(value, cfg[key], 'i32');
+                _vpx_codec_control_(this.ctx, int_configs[key], value);
+            }
+        }
+        Module._free(value);
+
         this.iter = Module._malloc(4);
-        this.img = _vpx_img_alloc(0, 0x102 /* VPX_IMG_FMT_I420 */, cfg.width, cfg.height, 1);
+        this.img = _vpx_img_alloc(0, 0x102 /* VPX_IMG_FMT_I420 */, vi.width, vi.height, 1);
         var y_ptr = Module.getValue(this.img + 4 * 9, 'i32');
         var u_ptr = Module.getValue(this.img + 4 * 10, 'i32');
         var v_ptr = Module.getValue(this.img + 4 * 11, 'i32');
-        this.img_y = Module.HEAPU8.subarray(y_ptr, y_ptr + cfg.width * cfg.height);
-        this.img_u = Module.HEAPU8.subarray(u_ptr, u_ptr + cfg.width * cfg.height / 4);
-        this.img_v = Module.HEAPU8.subarray(v_ptr, v_ptr + cfg.width * cfg.height / 4);
+        this.img_y = Module.HEAPU8.subarray(y_ptr, y_ptr + vi.width * vi.height);
+        this.img_u = Module.HEAPU8.subarray(u_ptr, u_ptr + vi.width * vi.height / 4);
+        this.img_v = Module.HEAPU8.subarray(v_ptr, v_ptr + vi.width * vi.height / 4);
         this.worker.onmessage = (e: MessageEvent) => {
             this._encode(e.data);
         };
