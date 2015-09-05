@@ -38,7 +38,7 @@ class Camera implements IReader {
                     });
                 });
             };
-            if (navigator.mediaDevices) {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 if (args['width'] && args['height']) {
                     video_constraints = {
                         width: args['width'],
