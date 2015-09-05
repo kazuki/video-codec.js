@@ -37,9 +37,7 @@ class OpenH264Encoder {
 
     _setup(cfg: any) {
         this.worker.onmessage = () => {};
-        var fps = 60.0;
-        if (cfg.fps_den != 0 && cfg.fps_num > 0)
-            fps = cfg.fps_num / cfg.fps_den;
+        var fps = cfg.fps_num / cfg.fps_den;
         var ret = _WelsSetupSVCEncoder(this.encoder, cfg.width, cfg.height, fps, 5000000);
         if (ret == 0) {
             this.worker.onmessage = (e: MessageEvent) => {

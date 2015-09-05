@@ -246,7 +246,8 @@ class Test {
             var reader = new Camera();
             reader.open({
                 width: width,
-                height: height
+                height: height,
+                fps: parseInt(this._getSelectElement('camera-framerate').value, 10)
             }).then((video_info) => {
                 resolve([reader, video_info]);
             }, reject);
