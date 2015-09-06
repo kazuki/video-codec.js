@@ -33,18 +33,3 @@ index b6419d1..2f6a351 100644
  ifeq ($(ASM_ARCH), x86)
  ifeq ($(ARCH), x86_64)
  ASMFLAGS += -f elf64
-diff --git a/codec/common/src/WelsThreadLib.cpp b/codec/common/src/WelsThreadLib.cpp
-index 94258a0..ea607d1 100644
---- a/codec/common/src/WelsThreadLib.cpp
-+++ b/codec/common/src/WelsThreadLib.cpp
-@@ -493,8 +493,8 @@ WELS_THREAD_ERROR_CODE    WelsQueryLogicalProcessInfo (WelsLogicalProcessInfo* p
- 
-   size_t len = sizeof (pInfo->ProcessorCount);
- 
--  if (sysctlbyname (HW_NCPU_NAME, &pInfo->ProcessorCount, &len, NULL, 0) == -1)
--    pInfo->ProcessorCount = 1;
-+  //if (sysctlbyname (HW_NCPU_NAME, &pInfo->ProcessorCount, &len, NULL, 0) == -1)
-+  pInfo->ProcessorCount = 1;
- 
-   return WELS_THREAD_ERROR_OK;
- 
