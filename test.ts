@@ -63,6 +63,47 @@ class Test {
             daala_quant.appendChild(opt);
         }
 
+        var vpx_lag = this._getSelectElement('libvpx_config_lag');
+        for (var i = 0; i <= 64; ++i) {
+            var opt = <HTMLOptionElement>document.createElement('option');
+            var text = i.toString();
+            opt.value = i.toString();
+            if (i == 0) {
+                text = "0 (disable)";
+            }
+            if (i == 0)
+                opt.selected = true;
+            opt.appendChild(document.createTextNode(text));
+            vpx_lag.appendChild(opt);
+        }
+
+        var vpx_q_list = [
+            this._getSelectElement('libvpx_config_rc_quality_level'),
+            this._getSelectElement('libvpx_config_rc_min_quantizer'),
+            this._getSelectElement('libvpx_config_rc_max_quantizer')
+        ];
+        vpx_q_list.forEach((vpx_q_select, idx) => {
+            for (var i = 0; i < 64; ++i) {
+                var opt = <HTMLOptionElement>document.createElement('option');
+                var text = i.toString();
+                opt.value = i.toString();
+                if (i == 0) {
+                    text += " (low)";
+                } else if (i == 63) {
+                    text += " (high)"
+                }
+                if (idx == 1 && i == 0) {
+                    opt.selected = true;
+                } else if (idx == 2 && i == 63) {
+                    opt.selected = true;
+                } else if (idx == 0 && i == 20) {
+                    opt.selected = true;
+                }
+                opt.appendChild(document.createTextNode(text));
+                vpx_q_select.appendChild(opt);
+            }
+        });
+
         changed_codec_type();
     }
 
@@ -212,10 +253,7 @@ class Test {
             return [
                 new Encoder('vpx_encoder.js'),
                 new Decoder('vpx_decoder.js'),
-                {
-                    'version': ver,
-                    'cpuused': parseInt(this._getSelectElement('libvpx_config_cpuused').value, 10),
-                },
+                this._build_libvpx_encoder_config(ver),
                 {
                     'version': ver,
                 }
@@ -237,6 +275,23 @@ class Test {
         } else {
             return [null, null, null, null];
         }
+    }
+
+    _build_libvpx_encoder_config(ver: number): any {
+        var cfg = {
+            'version': ver,
+            'cpuused': parseInt(this._getSelectElement('libvpx_config_cpuused').value, 10),
+            'rc_end_usage': parseInt(this._getSelectElement('libvpx_config_rc_mode').value, 10),
+            'lag_in_frames': parseInt(this._getSelectElement('libvpx_config_lag').value, 10),
+        };
+        if (cfg.rc_end_usage == 0 || cfg.rc_end_usage == 1)
+            cfg['rc_target_bitrate'] = parseInt((<HTMLInputElement>document.getElementById('libvpx_config_rc_bitrate')).value, 10);
+        /*if (cfg.rc_end_usage == 2 || cfg.rc_end_usage == 3) {
+            cfg['cq_level'] = parseInt(this._getSelectElement('libvpx_config_rc_quality_level').value, 10);
+        }
+        cfg['rc_min_quantizer'] = parseInt(this._getSelectElement('libvpx_config_rc_min_quantizer').value, 10);
+        cfg['rc_max_quantizer'] = parseInt(this._getSelectElement('libvpx_config_rc_max_quantizer').value, 10);*/
+        return cfg;
     }
 
     _open_reader(): Promise<[IReader, VideoInfo]> {

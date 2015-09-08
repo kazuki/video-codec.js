@@ -6,8 +6,7 @@ declare function _vpx_codec_vp9_cx(): number;
 declare function _vpx_codec_vp10_cx(): number;
 declare function _vpx_codec_enc_init2(ctx: number, iface: number, cfg: number, flags: number): number;
 declare function _vpx_codec_enc_create_config(iface: number, width: number, height: number,
-                                              timebase_num: number, timebase_den: number,
-                                              target_bitrate: number): number;
+                                              timebase_num: number, timebase_den: number): number;
 declare function _allocate_vpx_codec_ctx(): number;
 declare function _vpx_img_alloc(img: number, fmt: number, width: number, height: number, align: number): number;
 declare function _vpx_codec_encode(ctx: number, img: number, pts_lo: number, pts_hi: number, duration: number, flags: number, deadline: number): number;
@@ -40,8 +39,8 @@ class VPXEncoder {
             this.iface = _vpx_codec_vp8_cx();
         }
 
-        var config = _vpx_codec_enc_create_config(this.iface, vi.width, vi.height,
-                                                  1, 1000, 1000000);
+        var config = _vpx_codec_enc_create_config(this.iface, vi.width, vi.height, 1, 1000);
+        this._setup_config(config, cfg);
         this.ctx = _allocate_vpx_codec_ctx();
         if (_vpx_codec_enc_init2(this.ctx, this.iface, config, 0)) {
             this.worker.postMessage({status: -1});
@@ -51,11 +50,15 @@ class VPXEncoder {
         var value = Module._malloc(4);
         var int_configs = {
             'cpuused': 13,
+            'cq_level': 25,
         };
         for (var key in int_configs) {
             if (key in cfg) {
                 Module.setValue(value, cfg[key], 'i32');
-                _vpx_codec_control_(this.ctx, int_configs[key], value);
+                if (_vpx_codec_control_(this.ctx, int_configs[key], value) != 0) {
+                    this.worker.postMessage({status: -2});
+                    return;
+                }
             }
         }
         Module._free(value);
@@ -89,7 +92,8 @@ class VPXEncoder {
         while ((ret = _vpx_codec_get_cx_data(this.ctx, this.iter)) != 0) {
             if (data) {
                 // インタフェース的に未対応...
-                this.worker.postMessage({status: -1});
+                this.worker.postMessage({status: -1,
+                                         reason: 'not implemented (I/F limitation)'});
                 return;
             }
             var pkt = this._parse_pkt(ret);
@@ -119,6 +123,35 @@ class VPXEncoder {
             kind: kind,
             data: Module.HEAPU8.subarray(ptr, ptr + bytes),
         };
+    }
+
+    _setup_config(encoder_config: number, cfg: any) {
+        var p = encoder_config;
+        var int_configs = {
+            'lag_in_frames': 11,
+            'rc_dropframe_thresh': 12,
+            'rc_resize_allowed': 13,
+            'rc_scaled_width': 14,
+            'rc_scaled_height': 15,
+            'rc_resize_up_thresh': 16,
+            'rc_resize_down_thresh': 17,
+            'rc_end_usage': 18,
+            'rc_target_bitrate': 23,
+            'rc_min_quantizer': 24,
+            'rc_max_quantizer': 25,
+            'rc_undershoot_pct': 26,
+            'rc_overshoot_pct': 27,
+            'rc_buf_sz': 28,
+            'rc_buf_initial_sz': 29,
+            'rc_buf_optimal_sz': 30,
+            'kf_mode': 34,
+            'kf_min_dist': 35,
+            'kf_max_dist': 36,
+        };
+        for (var key in int_configs) {
+            if (key in cfg)
+                Module.setValue(p + 4 * int_configs[key], cfg[key], 'i32');
+        }
     }
 }
 new VPXEncoder(this);

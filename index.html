@@ -131,6 +131,38 @@
             <label for="libvpx_config_cpuused">Speed:</label>
             <select id="libvpx_config_cpuused"></select>
           </div>
+          <div>
+            <label for="libvpx_config_lag">Lag:</label>
+            <select id="libvpx_config_lag"></select>
+          </div>
+          <fieldset style="display: block; margin: 1ex 0ex">
+            <legend>Rate-control</legend>
+            <div>
+              <label for="libvpx_config_rc_mode">mode</label>
+              <select id="libvpx_config_rc_mode">
+                <option value="0">Variable Bit Rate</option>
+                <option value="1">Constant Bit Rate</option>
+                <!--<option value="2">Constrained Quality</option>
+                <option value="3">Constant Quality</option>-->
+              </select>
+            </div>
+            <div>
+              <label for="libvpx_config_rc_bitrate">Bitrate[kbps]:</label>
+              <input type="text" id="libvpx_config_rc_bitrate" size="5" value="10">
+            </div>
+            <div style="display:none">
+              <label for="libvpx_config_rc_quality_level">Quality:</label>
+              <select id="libvpx_config_rc_quality_level"></select>
+            </div>
+            <div style="display:none">
+              <label for="libvpx_config_rc_min_quantizer">Min Quantizer:</label>
+              <select id="libvpx_config_rc_min_quantizer"></select>
+            </div>
+            <div style="display:none">
+              <label for="libvpx_config_rc_max_quantizer">Max Quantizer:</label>
+              <select id="libvpx_config_rc_max_quantizer"></select>
+            </div>
+          </fieldset>
         </fieldset>
         <fieldset style="display: none" id="openh264_config">
           <legend>openH264 config</legend>
