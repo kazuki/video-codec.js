@@ -2,6 +2,7 @@
 /// <reference path="utils.ts" />
 /// <reference path="camera.ts" />
 /// <reference path="renderer.ts" />
+/// <reference path="img_codec.ts" />
 
 class Test {
     src_renderer: Renderer;
@@ -32,6 +33,7 @@ class Test {
                 'daala': document.getElementById('daala_config'),
                 'libvpx': document.getElementById('libvpx_config'),
                 'openH264': document.getElementById('openh264_config'),
+                'image': document.getElementById('image_config'),
             };
             for (var key in configs) {
                 configs[key].style.display = 'none';
@@ -281,6 +283,16 @@ class Test {
                 new Encoder('libde265_encoder.js'),
                 new Decoder('libde265_decoder.js'),
                 {},
+                {}
+            ];
+        } else if (libname == 'image') {
+            return [
+                new MotionImageEncoder(),
+                new MotionImageDecoder(),
+                {
+                    'type': (<HTMLInputElement>document.getElementById('image_config_type')).value,
+                    'quality': parseFloat((<HTMLInputElement>document.getElementById('image_config_quality')).value),
+                },
                 {}
             ];
         } else {

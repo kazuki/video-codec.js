@@ -60,6 +60,7 @@
             <option>libvpx</option>
             <option>openH264</option>
             <!--<option>libde265</option>-->
+            <option>image</option>
           </select>
         </div>
         <fieldset style="display: none" id="daala_config">
@@ -220,6 +221,21 @@
           <div>
             <input type="checkbox" id="openh264_config_scene_detect" checked>
             <label for="openh264_config_scene_detect">Enable Scene Change Detection</label>
+          </div>
+        </fieldset>
+        <fieldset style="display: none" id="image_config">
+          <legend>config</legend>
+          <div>
+            <label for="image_config_type">Type:</label>
+            <select id="image_config_type">
+              <option value="image/png">PNG</option>
+              <option value="image/jpeg">JPEG</option>
+              <option value="image/webp">WebP</option>
+            </select>
+          </div>
+          <div>
+            <label for="image_config_quality">Quality(0.0-1.0):</label>
+            <input id="image_config_quality" type="text" value="1.0" size="3">
           </div>
         </fieldset>
       </fieldset>
