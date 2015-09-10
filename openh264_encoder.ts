@@ -2,8 +2,8 @@
 /// <reference path="typings/emscripten.d.ts" />
 
 declare function _WelsCreateSVCEncoder(ptr: number): number;
-declare function _WelsSetupSVCEncoder(ptr: number, width: number, height: number,
-                                      max_frame_rate: number, targetBitrate: number): number;
+declare function _CreateEncParamExt(ptr: number, width: number, height: number, max_frame_rate: number): number;
+declare function _WelsInitializeSVCEncoder(ptr: number, param: number): number;
 declare function _WelsSVCEncoderEncodeFrame(ptr: number, pic: number, bsi: number): number;
 declare function _SizeOfSFrameBSInfo(): number;
 declare function _SizeOfSSourcePicture(): number;
@@ -31,27 +31,59 @@ class OpenH264Encoder {
             throw 'WelsCreateSVCEncoder failed: ' + ret;
 
         worker.onmessage = (e: MessageEvent) => {
-            this._setup(e.data);
+            this._setup(e.data, e.data.params);
         };
     }
 
-    _setup(cfg: any) {
+    _setup(vi: VideoInfo, cfg: any) {
         this.worker.onmessage = () => {};
-        var fps = cfg.fps_num / cfg.fps_den;
-        var ret = _WelsSetupSVCEncoder(this.encoder, cfg.width, cfg.height, fps, 5000000);
+        var fps = vi.fps_num / vi.fps_den;
+        var params = _CreateEncParamExt(this.encoder, vi.width, vi.height, fps);
+
+        var int_configs = {
+            'usage': 0,
+            'bitrate': 12,
+            'rc_mode': 16,
+            'complexity': 768,
+            'ref_frames': 776,
+            'entropy_coding': 792,
+            'max_bitrate': 800,
+            'max_qp': 804,
+            'min_qp': 808,
+        };
+        var bool_configs = {
+            'denoise': 844,
+            'background_detection': 845,
+            'adaptive_quant': 846,
+            'frame_cropping': 847,
+            'scene_change_detect': 848
+        };
+        for (var key in int_configs) {
+            if (key in cfg)
+                Module.setValue(params + int_configs[key], cfg[key], 'i32');
+        }
+        for (var key in bool_configs) {
+            if (key in cfg)
+                Module.setValue(params + bool_configs[key], cfg[key] ? 1 : 0, 'i8');
+        }
+        // copy target bitrate to spatial-bitrate
+        Module.setValue(params + 44, Module.getValue(params + int_configs['bitrate'], 'i32'), 'i32');
+
+        var ret = _WelsInitializeSVCEncoder(this.encoder, params);
+        Module._free(params);
         if (ret == 0) {
             this.worker.onmessage = (e: MessageEvent) => {
                 this._encode(e.data);
             };
         }
-        var size = cfg.width * cfg.height;
+        var size = vi.width * vi.height;
         this.i420 = Module._malloc(size * 1.5);
         this.y = Module.HEAPU8.subarray(this.i420, this.i420 + size);
         this.u = Module.HEAPU8.subarray(this.i420 + size, this.i420 + size * 1.25);
         this.v = Module.HEAPU8.subarray(this.i420 + size * 1.25, this.i420 + size * 1.5);
         this.pic = Module._malloc(_SizeOfSSourcePicture());
         this.bsi = Module._malloc(_SizeOfSFrameBSInfo());
-        _SetupSSourcePicture(this.pic, cfg.width, cfg.height, this.i420);
+        _SetupSSourcePicture(this.pic, vi.width, vi.height, this.i420);
         this.worker.postMessage({
             status: ret,
             data: null,

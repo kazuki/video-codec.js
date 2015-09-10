@@ -262,7 +262,18 @@ class Test {
             return [
                 new Encoder('openh264_encoder.js'),
                 new Decoder('openh264_decoder.js'),
-                {},
+                {
+                    'usage': parseInt(this._getSelectElement('openh264_config_usage').value, 10),
+                    'rc_mode': parseInt(this._getSelectElement('openh264_config_rc_mode').value, 10),
+                    'bitrate': parseInt((<HTMLInputElement>document.getElementById('openh264_config_bitrate')).value, 10),
+                    'ref_frames': parseInt((<HTMLInputElement>document.getElementById('openh264_config_ref_frames')).value, 10),
+                    'complexity': parseInt(this._getSelectElement('openh264_config_complexity').value, 10),
+                    'entropy_coding': parseInt(this._getSelectElement('openh264_config_entropy').value, 10),
+                    'denoise': (<HTMLInputElement>document.getElementById('openh264_config_denoise')).checked,
+                    'background_detection': (<HTMLInputElement>document.getElementById('openh264_config_bg_detect')).checked,
+                    'adaptive_quant': (<HTMLInputElement>document.getElementById('openh264_config_adaptive_quant')).checked,
+                    'scene_change_detect': (<HTMLInputElement>document.getElementById('openh264_config_scene_detect')).checked,
+                },
                 {}
             ];
         } else if (libname == 'libde265') {

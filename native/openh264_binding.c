@@ -1,21 +1,26 @@
+#include <stdlib.h>
 #include "openh264/codec/api/svc/codec_api.h"
 
-int WelsSetupSVCEncoder(ISVCEncoder *encoder, int width, int height, float maxFrameRate, int targetBitrate)
+SEncParamExt *CreateEncParamExt(ISVCEncoder *encoder, int width, int height, float maxFrameRate)
 {
-    SEncParamExt param;
-    (*encoder)->GetDefaultParams (encoder, &param);
-    param.iUsageType = CAMERA_VIDEO_REAL_TIME;
-    param.fMaxFrameRate = maxFrameRate;
-    param.iPicWidth = width;
-    param.iPicHeight = height;
-    param.iTargetBitrate = targetBitrate;
-    param.iSpatialLayerNum = 1;
-    param.sSpatialLayers[0].iVideoWidth = param.iPicWidth;
-    param.sSpatialLayers[0].iVideoHeight = param.iPicHeight;
-    param.sSpatialLayers[0].fFrameRate = param.fMaxFrameRate;
-    param.sSpatialLayers[0].iSpatialBitrate = param.iTargetBitrate;
-    param.sSpatialLayers[0].uiProfileIdc = PRO_BASELINE;
-    return (*encoder)->InitializeExt (encoder, &param);
+    SEncParamExt *param = (SEncParamExt*)malloc(sizeof(SEncParamExt));
+    (*encoder)->GetDefaultParams (encoder, param);
+    param->iUsageType = CAMERA_VIDEO_REAL_TIME;
+    param->fMaxFrameRate = maxFrameRate;
+    param->iPicWidth = width;
+    param->iPicHeight = height;
+    param->iSpatialLayerNum = 1;
+    param->sSpatialLayers[0].iVideoWidth = param->iPicWidth;
+    param->sSpatialLayers[0].iVideoHeight = param->iPicHeight;
+    param->sSpatialLayers[0].fFrameRate = param->fMaxFrameRate;
+    param->sSpatialLayers[0].iSpatialBitrate = param->iTargetBitrate;
+    param->sSpatialLayers[0].uiProfileIdc = PRO_BASELINE;
+    return param;
+}
+
+int WelsInitializeSVCEncoder(ISVCEncoder *encoder, SEncParamExt *param)
+{
+    return (*encoder)->InitializeExt (encoder, param);
 }
 
 int SizeOfSFrameBSInfo()
