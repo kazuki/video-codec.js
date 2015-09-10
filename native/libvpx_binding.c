@@ -5,8 +5,7 @@
 
 vpx_codec_enc_cfg_t *vpx_codec_enc_create_config(vpx_codec_iface_t *iface,
                                                  unsigned int width, unsigned height,
-                                                 unsigned int timebase_num, unsigned int timebase_den,
-                                                 unsigned int target_bitrate)
+                                                 unsigned int timebase_num, unsigned int timebase_den)
 {
     vpx_codec_enc_cfg_t *cfg = (vpx_codec_enc_cfg_t*)malloc(sizeof(vpx_codec_enc_cfg_t));
     if (vpx_codec_enc_config_default(iface, cfg, 0)) {
@@ -17,11 +16,8 @@ vpx_codec_enc_cfg_t *vpx_codec_enc_create_config(vpx_codec_iface_t *iface,
     cfg->g_h = height;
     cfg->g_pass = VPX_RC_ONE_PASS;
     cfg->g_threads = 1;
-    if (cfg->g_lag_in_frames > 4)
-        cfg->g_lag_in_frames = 4; // near-realtime
     cfg->g_timebase.num = timebase_num;
     cfg->g_timebase.den = timebase_den;
-    cfg->rc_target_bitrate = target_bitrate;
     return cfg;
 }
 

@@ -10,13 +10,19 @@ class Camera implements IReader {
     _v: Uint8ClampedArray;
     _width: number;
     _height: number;
-    _prev_timestamp: number;
+    _first_timestamp: number;
+    _next_timestamp: number;
+    _prev_frame_index: number;
+    _fps: number;
+    _sec_per_frame: number;
 
     open(args: any): Promise<VideoInfo> {
         return new Promise((resolve, reject) => {
             var video_constraints: any = true;
             var callback = (strm) => {
-                this._prev_timestamp = -1;
+                this._fps = args['fps'] || 5;
+                this._sec_per_frame = 1 / this._fps;
+                this._first_timestamp = this._prev_frame_index = -1;
                 this._video = document.createElement('video');
                 this._video.src = URL.createObjectURL(strm);
                 this._video.play();
@@ -33,12 +39,12 @@ class Camera implements IReader {
                     resolve({
                         width: w,
                         height: h,
-                        fps_num: 0,
-                        fps_den: 0,
+                        fps_num: this._fps,
+                        fps_den: 1,
                     });
                 });
             };
-            if (navigator.mediaDevices) {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 if (args['width'] && args['height']) {
                     video_constraints = {
                         width: args['width'],
@@ -75,13 +81,22 @@ class Camera implements IReader {
         return new Promise((resolve, reject) => {
             var ctx = this._cvs.getContext('2d');
             var timestamp = this._video.currentTime;
-            if (this._prev_timestamp == timestamp) {
+            if (this._first_timestamp == -1) {
+                this._first_timestamp = timestamp;
+                this._next_timestamp = timestamp;
+            }
+            if (timestamp < this._next_timestamp) {
                 window.setTimeout(() => {
                     this.read().then(resolve, reject);
-                }, 0);
+                }, (this._next_timestamp - timestamp) * 1000);
                 return;
             }
-            this._prev_timestamp = timestamp;
+            var logic_frame_idx = Math.round((timestamp - this._first_timestamp) / this._sec_per_frame);
+            if (logic_frame_idx <= this._prev_frame_index)
+                logic_frame_idx = this._prev_frame_index + 1;
+            this._prev_frame_index = logic_frame_idx;
+            this._next_timestamp = (logic_frame_idx + 1) * this._sec_per_frame;
+
             ctx.drawImage(this._video,
                           0, 0, this._width, this._height,
                           0, 0, this._width, this._height);

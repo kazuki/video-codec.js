@@ -32,12 +32,7 @@ class DaalaEncoder {
         this.worker.onmessage = () => {};
         this.op = Module._malloc(4 * 8);
 
-        if (!cfg.fps_num || !cfg.fps_den) {
-            cfg.fps_num = 30;
-            cfg.fps_den = 1;
-        }
-        var di = _daala_info_create(cfg.width, cfg.height, 1, 1,
-                                    cfg.fps_num, cfg.fps_den);
+        var di = _daala_info_create(cfg.width, cfg.height, 1, 1, cfg.fps_num, cfg.fps_den);
         var dc = _daala_comment_create();
         this.img_ptr = _od_img_create(cfg.width, cfg.height);
         this.y = Module.HEAPU8.subarray(Module.getValue(this.img_ptr, 'i32'),

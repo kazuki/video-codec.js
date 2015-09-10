@@ -88,7 +88,9 @@ var Camera = (function () {
         return new Promise(function (resolve, reject) {
             var video_constraints = true;
             var callback = function (strm) {
-                _this._prev_timestamp = -1;
+                _this._fps = args['fps'] || 5;
+                _this._sec_per_frame = 1 / _this._fps;
+                _this._first_timestamp = _this._prev_frame_index = -1;
                 _this._video = document.createElement('video');
                 _this._video.src = URL.createObjectURL(strm);
                 _this._video.play();
@@ -105,12 +107,12 @@ var Camera = (function () {
                     resolve({
                         width: w,
                         height: h,
-                        fps_num: 0,
-                        fps_den: 0
+                        fps_num: _this._fps,
+                        fps_den: 1
                     });
                 });
             };
-            if (navigator.mediaDevices) {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 if (args['width'] && args['height']) {
                     video_constraints = {
                         width: args['width'],
@@ -149,13 +151,21 @@ var Camera = (function () {
         return new Promise(function (resolve, reject) {
             var ctx = _this._cvs.getContext('2d');
             var timestamp = _this._video.currentTime;
-            if (_this._prev_timestamp == timestamp) {
+            if (_this._first_timestamp == -1) {
+                _this._first_timestamp = timestamp;
+                _this._next_timestamp = timestamp;
+            }
+            if (timestamp < _this._next_timestamp) {
                 window.setTimeout(function () {
                     _this.read().then(resolve, reject);
-                }, 0);
+                }, (_this._next_timestamp - timestamp) * 1000);
                 return;
             }
-            _this._prev_timestamp = timestamp;
+            var logic_frame_idx = Math.round((timestamp - _this._first_timestamp) / _this._sec_per_frame);
+            if (logic_frame_idx <= _this._prev_frame_index)
+                logic_frame_idx = _this._prev_frame_index + 1;
+            _this._prev_frame_index = logic_frame_idx;
+            _this._next_timestamp = (logic_frame_idx + 1) * _this._sec_per_frame;
             ctx.drawImage(_this._video, 0, 0, _this._width, _this._height, 0, 0, _this._width, _this._height);
             var img = ctx.getImageData(0, 0, _this._width, _this._height);
             var rgba = img.data;
@@ -298,6 +308,48 @@ var Test = (function () {
             opt.appendChild(document.createTextNode(text));
             daala_quant.appendChild(opt);
         }
+        var vpx_lag = this._getSelectElement('libvpx_config_lag');
+        for (var i = 0; i <= 64; ++i) {
+            var opt = document.createElement('option');
+            var text = i.toString();
+            opt.value = i.toString();
+            if (i == 0) {
+                text = "0 (disable)";
+            }
+            if (i == 0)
+                opt.selected = true;
+            opt.appendChild(document.createTextNode(text));
+            vpx_lag.appendChild(opt);
+        }
+        var vpx_q_list = [
+            this._getSelectElement('libvpx_config_rc_quality_level'),
+            this._getSelectElement('libvpx_config_rc_min_quantizer'),
+            this._getSelectElement('libvpx_config_rc_max_quantizer')
+        ];
+        vpx_q_list.forEach(function (vpx_q_select, idx) {
+            for (var i = 0; i < 64; ++i) {
+                var opt = document.createElement('option');
+                var text = i.toString();
+                opt.value = i.toString();
+                if (i == 0) {
+                    text += " (low)";
+                }
+                else if (i == 63) {
+                    text += " (high)";
+                }
+                if (idx == 1 && i == 0) {
+                    opt.selected = true;
+                }
+                else if (idx == 2 && i == 63) {
+                    opt.selected = true;
+                }
+                else if (idx == 0 && i == 20) {
+                    opt.selected = true;
+                }
+                opt.appendChild(document.createTextNode(text));
+                vpx_q_select.appendChild(opt);
+            }
+        });
         changed_codec_type();
     };
     Test.prototype._changed_libvpx_codec_version = function () {
@@ -447,10 +499,7 @@ var Test = (function () {
             return [
                 new Encoder('vpx_encoder.js'),
                 new Decoder('vpx_decoder.js'),
-                {
-                    'version': ver,
-                    'cpuused': parseInt(this._getSelectElement('libvpx_config_cpuused').value, 10)
-                },
+                this._build_libvpx_encoder_config(ver),
                 {
                     'version': ver
                 }
@@ -460,7 +509,18 @@ var Test = (function () {
             return [
                 new Encoder('openh264_encoder.js'),
                 new Decoder('openh264_decoder.js'),
-                {},
+                {
+                    'usage': parseInt(this._getSelectElement('openh264_config_usage').value, 10),
+                    'rc_mode': parseInt(this._getSelectElement('openh264_config_rc_mode').value, 10),
+                    'bitrate': parseInt(document.getElementById('openh264_config_bitrate').value, 10),
+                    'ref_frames': parseInt(document.getElementById('openh264_config_ref_frames').value, 10),
+                    'complexity': parseInt(this._getSelectElement('openh264_config_complexity').value, 10),
+                    'entropy_coding': parseInt(this._getSelectElement('openh264_config_entropy').value, 10),
+                    'denoise': document.getElementById('openh264_config_denoise').checked,
+                    'background_detection': document.getElementById('openh264_config_bg_detect').checked,
+                    'adaptive_quant': document.getElementById('openh264_config_adaptive_quant').checked,
+                    'scene_change_detect': document.getElementById('openh264_config_scene_detect').checked
+                },
                 {}
             ];
         }
@@ -476,14 +536,32 @@ var Test = (function () {
             return [null, null, null, null];
         }
     };
+    Test.prototype._build_libvpx_encoder_config = function (ver) {
+        var cfg = {
+            'version': ver,
+            'cpuused': parseInt(this._getSelectElement('libvpx_config_cpuused').value, 10),
+            'rc_end_usage': parseInt(this._getSelectElement('libvpx_config_rc_mode').value, 10),
+            'lag_in_frames': parseInt(this._getSelectElement('libvpx_config_lag').value, 10)
+        };
+        if (cfg.rc_end_usage == 0 || cfg.rc_end_usage == 1)
+            cfg['rc_target_bitrate'] = parseInt(document.getElementById('libvpx_config_rc_bitrate').value, 10);
+        /*if (cfg.rc_end_usage == 2 || cfg.rc_end_usage == 3) {
+            cfg['cq_level'] = parseInt(this._getSelectElement('libvpx_config_rc_quality_level').value, 10);
+        }
+        cfg['rc_min_quantizer'] = parseInt(this._getSelectElement('libvpx_config_rc_min_quantizer').value, 10);
+        cfg['rc_max_quantizer'] = parseInt(this._getSelectElement('libvpx_config_rc_max_quantizer').value, 10);*/
+        return cfg;
+    };
     Test.prototype._open_reader = function () {
+        var _this = this;
         var resolution = this._getSelectElement('camera-resolution').value.split('x');
         var width = parseInt(resolution[0]), height = parseInt(resolution[1]);
         return new Promise(function (resolve, reject) {
             var reader = new Camera();
             reader.open({
                 width: width,
-                height: height
+                height: height,
+                fps: parseInt(_this._getSelectElement('camera-framerate').value, 10)
             }).then(function (video_info) {
                 resolve([reader, video_info]);
             }, reject);

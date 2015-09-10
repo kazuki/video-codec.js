@@ -24,7 +24,7 @@ OPENH264_DIR=$(NATIVE_DIR)/openh264
 OPENH264_LIB=$(OPENH264_DIR)/libopenh264.a
 OPENH264_ENCODER=openh264_encoder.js
 OPENH264_ENCODER_DEPS=$(OPENH264_LIB) $(NATIVE_DIR)/openh264_binding.c openh264_encoder.ts
-OPENH264_ENCODER_EXPORTS='_WelsCreateSVCEncoder','_WelsSetupSVCEncoder','_SizeOfSFrameBSInfo','_SizeOfSSourcePicture','_SetupSSourcePicture','_WelsSVCEncoderEncodeFrame','_SetSSourcePictureTimestamp'
+OPENH264_ENCODER_EXPORTS='_WelsCreateSVCEncoder','_CreateEncParamExt','_WelsInitializeSVCEncoder','_SizeOfSFrameBSInfo','_SizeOfSSourcePicture','_SetupSSourcePicture','_WelsSVCEncoderEncodeFrame','_SetSSourcePictureTimestamp'
 OPENH264_DECODER=openh264_decoder.js
 OPENH264_DECODER_DEPS=$(OPENH264_LIB) $(NATIVE_DIR)/openh264_binding.c openh264_decoder.ts
 OPENH264_DECODER_EXPORTS='_WelsCreateDecoder','_WelsInitializeDecoder','_WelsDecoderDecodeFrame','_SizeOfSBufferInfo'
@@ -54,6 +54,7 @@ clean:
 	(cd $(LIBVPX_DIR);  rm -rf *; git reset --hard); \
 	(cd $(OPENH264_DIR);  rm -rf *; git reset --hard); \
 	(cd $(DAALA_DIR);  rm -rf *; git reset --hard); \
+	(cd $(OGG_DIR);  rm -rf *; git reset --hard); \
 	rm -f $(TARGETS)
 
 apply-patch:

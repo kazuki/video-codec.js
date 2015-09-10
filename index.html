@@ -34,6 +34,18 @@
               <option>1920x1080</option>
             </optgroup>
           </select>
+          <select id="camera-framerate">
+            <option value="1">1 fps</option>
+            <option value="2">2 fps</option>
+            <option value="3">3 fps</option>
+            <option value="4">4 fps</option>
+            <option value="5">5 fps</option>
+            <option value="10">10 fps</option>
+            <option value="15">15 fps</option>
+            <option value="20">20 fps</option>
+            <option value="25">25 fps</option>
+            <option value="30">30 fps</option>
+          </select>
         </div>
         <!--<div>
           <input type="radio" name="input-type" id="input-file">File
@@ -119,9 +131,96 @@
             <label for="libvpx_config_cpuused">Speed:</label>
             <select id="libvpx_config_cpuused"></select>
           </div>
+          <div>
+            <label for="libvpx_config_lag">Lag:</label>
+            <select id="libvpx_config_lag"></select>
+          </div>
+          <fieldset style="display: block; margin: 1ex 0ex">
+            <legend>Rate-control</legend>
+            <div>
+              <label for="libvpx_config_rc_mode">mode</label>
+              <select id="libvpx_config_rc_mode">
+                <option value="0">Variable Bit Rate</option>
+                <option value="1">Constant Bit Rate</option>
+                <!--<option value="2">Constrained Quality</option>
+                <option value="3">Constant Quality</option>-->
+              </select>
+            </div>
+            <div>
+              <label for="libvpx_config_rc_bitrate">Bitrate[kbps]:</label>
+              <input type="text" id="libvpx_config_rc_bitrate" size="5" value="10">
+            </div>
+            <div style="display:none">
+              <label for="libvpx_config_rc_quality_level">Quality:</label>
+              <select id="libvpx_config_rc_quality_level"></select>
+            </div>
+            <div style="display:none">
+              <label for="libvpx_config_rc_min_quantizer">Min Quantizer:</label>
+              <select id="libvpx_config_rc_min_quantizer"></select>
+            </div>
+            <div style="display:none">
+              <label for="libvpx_config_rc_max_quantizer">Max Quantizer:</label>
+              <select id="libvpx_config_rc_max_quantizer"></select>
+            </div>
+          </fieldset>
         </fieldset>
         <fieldset style="display: none" id="openh264_config">
           <legend>openH264 config</legend>
+          <div>
+            <label for="openh264_config_usage">Usage:</label>
+            <select id="openh264_config_usage">
+              <option value="0">Camera (realtime)</option>
+              <option value="1">Screen (realtime)</option>
+            </select>
+          </div>
+          <div>
+            <label for="openh264_config_complexity">Complexity:</label>
+            <select id="openh264_config_complexity">
+              <option value="0">Low</option>
+              <option value="1">Medium</option>
+              <option value="2">High</option>
+            </select>
+          </div>
+          <div>
+            <label for="openh264_config_rc_mode">Rate-Control Mode:</label>
+            <select id="openh264_config_rc_mode">
+              <option value="0">Quality</option>
+              <option value="1">Bitrate</option>
+              <option value="2">Buffer-based</option>
+              <option value="3">Timestamp</option>
+            </select>
+          </div>
+          <div>
+            <label for="openh264_config_bitrate">Bitrate:</label>
+            <input type="text" id="openh264_config_bitrate" size="5" value="10000">
+          </div>
+          <div>
+            <label for="openh264_config_ref_frames">Ref Frames:</label>
+            <input type="text" id="openh264_config_ref_frames" size="5" value="-1">
+          </div>
+          <div>
+            <label for="openh264_config_entropy">Entropy Coding:</label>
+            <select id="openh264_config_entropy">
+              <option value="0">CAVLC</option>
+              <option value="1">CABAC</option>
+            </select>
+          </div>
+          <div>
+            <input type="checkbox" id="openh264_config_denoise">
+            <label for="openh264_config_denoise">Enable Denoise</label>
+          </div>
+          <div>
+            <input type="checkbox" id="openh264_config_bg_detect" checked>
+            <label for="openh264_config_bg_detect">Enable Background Detection</label>
+          </div>
+          <div>
+            <input type="checkbox" id="openh264_config_adaptive_quant" checked>
+            <label for="openh264_config_adaptive_quant">Enable Adaptive Quant</label>
+          </div>
+          <div>
+            <input type="checkbox" id="openh264_config_scene_detect" checked>
+            <label for="openh264_config_scene_detect">Enable Scene Change Detection</label>
+          </div>
         </fieldset>
       </fieldset>
     </div>
