@@ -66,6 +66,17 @@
         <fieldset style="display: none" id="daala_config">
           <legend>daala config</legend>
           <div>
+            <label for="daala_config_kf">Key Frame Rate:</label>
+            <select id="daala_config_kf">
+              <option value="1">1 (I picture only, fastest)</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="10">10</option>
+            </select>
+          </div>
+          <div>
             <label for="daala_config_quant">Quality:</label>
             <select id="daala_config_quant"></select>
           </div>
@@ -136,6 +147,10 @@
             <label for="libvpx_config_lag">Lag:</label>
             <select id="libvpx_config_lag"></select>
           </div>
+          <div>
+            <label for="libvpx_config_kf_max">KeyFrame Interval:</label>
+            <input type="text" size="3" id="libvpx_config_kf_max" value="100">
+          </div>
           <fieldset style="display: block; margin: 1ex 0ex">
             <legend>Rate-control</legend>
             <div>
@@ -143,23 +158,23 @@
               <select id="libvpx_config_rc_mode">
                 <option value="0">Variable Bit Rate</option>
                 <option value="1">Constant Bit Rate</option>
-                <!--<option value="2">Constrained Quality</option>
-                <option value="3">Constant Quality</option>-->
+                <option value="2">Constrained Quality</option>
+                <option value="3">Constant Quality</option>
               </select>
             </div>
             <div>
               <label for="libvpx_config_rc_bitrate">Bitrate[kbps]:</label>
               <input type="text" id="libvpx_config_rc_bitrate" size="5" value="10">
             </div>
-            <div style="display:none">
+            <div>
               <label for="libvpx_config_rc_quality_level">Quality:</label>
               <select id="libvpx_config_rc_quality_level"></select>
             </div>
-            <div style="display:none">
+            <div>
               <label for="libvpx_config_rc_min_quantizer">Min Quantizer:</label>
               <select id="libvpx_config_rc_min_quantizer"></select>
             </div>
-            <div style="display:none">
+            <div>
               <label for="libvpx_config_rc_max_quantizer">Max Quantizer:</label>
               <select id="libvpx_config_rc_max_quantizer"></select>
             </div>
@@ -181,6 +196,10 @@
               <option value="1">Medium</option>
               <option value="2">High</option>
             </select>
+          </div>
+          <div>
+            <label for="openh264_config_kf">KeyFrame Interval:</label>
+            <input type="text" size="3" id="openh264_config_kf" value="100">
           </div>
           <div>
             <label for="openh264_config_rc_mode">Rate-Control Mode:</label>
@@ -245,6 +264,7 @@
         <legend>Action</legend>
         <button id="play">Play</button>
         <button id="encdec">Encode &amp; Decode</button>
+        <button id="drop_packet">Drop Packet</button>
       </fieldset>
       <fieldset>
         <legend>Statistics</legend>
@@ -267,6 +287,12 @@
           <span id="stat_cur_bitrate">- [kbps] / - [kbits/frame]</span>
           <span>Avg Bitrate: </span>
           <span id="stat_avg_bitrate">- [kbps] / - [kbits/frame]</span>
+        </div>
+        <div style="font-size: 80%">
+          <span>Encoded Frames: </span>
+          <span id="stat_enc_frames">-</span>
+          <span>Decoded Frames: </span>
+          <span id="stat_dec_frames">-</span>
         </div>
       </fieldset>
     </div>

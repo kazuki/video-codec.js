@@ -429,6 +429,8 @@ var MotionImageDecoder = (function () {
 /// <reference path="img_codec.ts" />
 var Test = (function () {
     function Test() {
+        // drop packet emu
+        this.drop_packet = false;
     }
     Test.prototype.init = function () {
         var _this = this;
@@ -441,11 +443,16 @@ var Test = (function () {
         this.stat_out_ts = document.getElementById('stat_out_ts');
         this.stat_cur_bps = document.getElementById('stat_cur_bitrate');
         this.stat_avg_bps = document.getElementById('stat_avg_bitrate');
+        this.stat_enc_frames = document.getElementById('stat_enc_frames');
+        this.stat_dec_frames = document.getElementById('stat_dec_frames');
         document.getElementById('play').addEventListener('click', function () {
             _this._play();
         });
         document.getElementById('encdec').addEventListener('click', function () {
             _this._encode_and_decode();
+        });
+        document.getElementById('drop_packet').addEventListener('click', function () {
+            _this.drop_packet = true;
         });
     };
     Test.prototype._setup_config_ui = function () {
@@ -511,10 +518,10 @@ var Test = (function () {
                 var text = i.toString();
                 opt.value = i.toString();
                 if (i == 0) {
-                    text += " (low)";
+                    text += " (high quality)";
                 }
                 else if (i == 63) {
-                    text += " (high)";
+                    text += " (low quality)";
                 }
                 if (idx == 1 && i == 0) {
                     opt.selected = true;
@@ -602,7 +609,7 @@ var Test = (function () {
             _this.src_video_info = video_info;
             _this.src_renderer.init(video_info);
             _this.dst_renderer.init(video_info);
-            var counter = 0, total_frames = 0;
+            var counter = 0, total_frames = 0, decoded_frames = 0;
             var bytes = 0, total_bytes = 0;
             var cur_fps = 0, avg_fps = 0;
             var cur_bps = 0, cur_bpf = 0, avg_bps = 0, avg_bpf = 0;
@@ -614,17 +621,23 @@ var Test = (function () {
                     ++total_frames;
                     _this.src_renderer.draw(ev);
                     encoder.encode(ev).then(function (packet) {
+                        if (_this.drop_packet) {
+                            _this.drop_packet = false;
+                            packet.data = null;
+                        }
                         if (packet.data) {
                             bytes += packet.data.byteLength;
                             total_bytes += packet.data.byteLength;
                             decoder.decode(packet).then(function (frame) {
                                 if (frame.data) {
+                                    ++decoded_frames;
                                     _this._update_dec_stat(frame.timestamp);
                                     _this.dst_renderer.draw(frame);
                                 }
                                 encode_frame();
                             }, function (e) {
                                 console.log('failed: decode', e);
+                                encode_frame();
                             });
                         }
                         else {
@@ -645,7 +658,7 @@ var Test = (function () {
                         counter = 0;
                         bytes = 0;
                     }
-                    _this._update_src_stat(ev.timestamp, cur_fps, avg_fps, cur_bps, cur_bpf, avg_bps, avg_bpf);
+                    _this._update_src_stat(ev.timestamp, cur_fps, avg_fps, total_frames, decoded_frames, cur_bps, cur_bpf, avg_bps, avg_bpf);
                 }, function (err) {
                     console.log('read failed:', err);
                 });
@@ -677,6 +690,7 @@ var Test = (function () {
                 new Encoder('daala_encoder.js'),
                 new Decoder('daala_decoder.js'),
                 {
+                    'keyframe_rate': parseInt(this._getSelectElement('daala_config_kf').value, 10),
                     'quant': parseInt(this._getSelectElement('daala_config_quant').value, 10),
                     'complexity': parseInt(this._getSelectElement('daala_config_complexity').value, 10),
                     'use_activity_masking': document.getElementById('daala_config_activity_masking').checked ? 1 : 0,
@@ -715,7 +729,8 @@ var Test = (function () {
                     'denoise': document.getElementById('openh264_config_denoise').checked,
                     'background_detection': document.getElementById('openh264_config_bg_detect').checked,
                     'adaptive_quant': document.getElementById('openh264_config_adaptive_quant').checked,
-                    'scene_change_detect': document.getElementById('openh264_config_scene_detect').checked
+                    'scene_change_detect': document.getElementById('openh264_config_scene_detect').checked,
+                    'keyframe_interval': parseInt(document.getElementById('openh264_config_kf').value, 10)
                 },
                 {}
             ];
@@ -748,15 +763,18 @@ var Test = (function () {
             'version': ver,
             'cpuused': parseInt(this._getSelectElement('libvpx_config_cpuused').value, 10),
             'rc_end_usage': parseInt(this._getSelectElement('libvpx_config_rc_mode').value, 10),
-            'lag_in_frames': parseInt(this._getSelectElement('libvpx_config_lag').value, 10)
+            'lag_in_frames': parseInt(this._getSelectElement('libvpx_config_lag').value, 10),
+            'kf_mode': 0,
+            'kf_min_dist': 1,
+            'kf_max_dist': parseInt(document.getElementById('libvpx_config_kf_max').value, 10)
         };
-        if (cfg.rc_end_usage == 0 || cfg.rc_end_usage == 1)
+        if (cfg.rc_end_usage <= 2)
             cfg['rc_target_bitrate'] = parseInt(document.getElementById('libvpx_config_rc_bitrate').value, 10);
-        /*if (cfg.rc_end_usage == 2 || cfg.rc_end_usage == 3) {
+        if (cfg.rc_end_usage == 2 || cfg.rc_end_usage == 3) {
             cfg['cq_level'] = parseInt(this._getSelectElement('libvpx_config_rc_quality_level').value, 10);
         }
         cfg['rc_min_quantizer'] = parseInt(this._getSelectElement('libvpx_config_rc_min_quantizer').value, 10);
-        cfg['rc_max_quantizer'] = parseInt(this._getSelectElement('libvpx_config_rc_max_quantizer').value, 10);*/
+        cfg['rc_max_quantizer'] = parseInt(this._getSelectElement('libvpx_config_rc_max_quantizer').value, 10);
         return cfg;
     };
     Test.prototype._open_reader = function () {
@@ -780,10 +798,14 @@ var Test = (function () {
                 this.src_video_info.height.toString();
         this._update_src_stat(0, 0, 0);
     };
-    Test.prototype._update_src_stat = function (timestamp, cur_fps, avg_fps, cur_bps, cur_bpf, avg_bps, avg_bpf) {
+    Test.prototype._update_src_stat = function (timestamp, cur_fps, avg_fps, encoded_frames, decoded_frames, cur_bps, cur_bpf, avg_bps, avg_bpf) {
         this.stat_in_ts.textContent = this._timestamp_to_string(timestamp);
         this.stat_cur_fps.textContent = cur_fps.toFixed(2);
         this.stat_avg_fps.textContent = avg_fps.toFixed(2);
+        if (encoded_frames && decoded_frames) {
+            this.stat_enc_frames.textContent = encoded_frames.toString();
+            this.stat_dec_frames.textContent = decoded_frames.toString();
+        }
         if (cur_bps && cur_bpf && avg_bps && avg_bpf) {
             this.stat_cur_bps.textContent =
                 (cur_bps / 1000).toFixed(0) + ' [kbps] / ' +

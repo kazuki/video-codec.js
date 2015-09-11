@@ -5,6 +5,7 @@ declare function _WelsCreateSVCEncoder(ptr: number): number;
 declare function _CreateEncParamExt(ptr: number, width: number, height: number, max_frame_rate: number): number;
 declare function _WelsInitializeSVCEncoder(ptr: number, param: number): number;
 declare function _WelsSVCEncoderEncodeFrame(ptr: number, pic: number, bsi: number): number;
+declare function _WelsSVCEncoderForceIntraFrame(ptr: number): number;
 declare function _SizeOfSFrameBSInfo(): number;
 declare function _SizeOfSSourcePicture(): number;
 declare function _SetupSSourcePicture(pic: number, width: number, height: number, data: number);
@@ -19,6 +20,8 @@ class OpenH264Encoder {
     v: Uint8Array;
     pic: number;
     bsi: number;
+    num_of_frames: number = 0;
+    keyframe_interval: number;
 
     constructor(worker: Worker) {
         this.worker = worker;
@@ -37,6 +40,7 @@ class OpenH264Encoder {
 
     _setup(vi: VideoInfo, cfg: any) {
         this.worker.onmessage = () => {};
+        this.keyframe_interval = cfg.keyframe_interval || 100;
         var fps = vi.fps_num / vi.fps_den;
         var params = _CreateEncParamExt(this.encoder, vi.width, vi.height, fps);
 
@@ -103,6 +107,10 @@ class OpenH264Encoder {
                 status: ret
             });
             return;
+        }
+        ++this.num_of_frames;
+        if (this.num_of_frames % this.keyframe_interval == 0) {
+            _WelsSVCEncoderForceIntraFrame(this.encoder);
         }
 
         var size = 0;

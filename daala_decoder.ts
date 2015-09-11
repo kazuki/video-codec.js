@@ -3,7 +3,8 @@
 
 declare function _daala_info_create(width: number, height: number,
                                     aspect_num: number, aspect_den: number,
-                                    timebase_num: number, timebase_den: number): number;
+                                    timebase_num: number, timebase_den: number,
+                                    keyframe_rate: number): number;
 declare function _daala_comment_create(): number;
 declare function _daala_decode_header_in(di: number, dc: number, ds: number, op: number): number;
 declare function _daala_decode_alloc(di: number, ds: number): number;
@@ -30,7 +31,7 @@ class DaalaDecoder {
     }
 
     _setup(packet: Packet) {
-        var di = _daala_info_create(0, 0, 0, 0, 0, 0);
+        var di = _daala_info_create(0, 0, 0, 0, 0, 0, 0);
         var dc = _daala_comment_create();
         var ds = Module._malloc(4);
         Module.setValue(ds, 0, 'i32');
