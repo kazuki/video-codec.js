@@ -60,6 +60,7 @@
             <option>libvpx</option>
             <option>openH264</option>
             <!--<option>libde265</option>-->
+            <option>image</option>
           </select>
         </div>
         <fieldset style="display: none" id="daala_config">
@@ -222,6 +223,21 @@
             <label for="openh264_config_scene_detect">Enable Scene Change Detection</label>
           </div>
         </fieldset>
+        <fieldset style="display: none" id="image_config">
+          <legend>config</legend>
+          <div>
+            <label for="image_config_type">Type:</label>
+            <select id="image_config_type">
+              <option value="image/png">PNG</option>
+              <option value="image/jpeg">JPEG</option>
+              <option value="image/webp">WebP</option>
+            </select>
+          </div>
+          <div>
+            <label for="image_config_quality">Quality(0.0-1.0):</label>
+            <input id="image_config_quality" type="text" value="1.0" size="3">
+          </div>
+        </fieldset>
       </fieldset>
     </div>
     <div>
@@ -230,11 +246,33 @@
         <button id="play">Play</button>
         <button id="encdec">Encode &amp; Decode</button>
       </fieldset>
+      <fieldset>
+        <legend>Statistics</legend>
+        <div style="font-size: 80%">
+          <span>Frame Size: </span>
+          <span id="stat_frame_size">-</span>
+          <span>Cur FrameRate: </span>
+          <span id="stat_cur_fps">- [fps]</span>
+          <span>Avg FrameRate: </span>
+          <span id="stat_avg_fps">- [fps]</span>
+        </div>
+        <div style="font-size: 80%">
+          <span>Source Timestamp: </span>
+          <span id="stat_in_ts">--:--.---</span>
+          <span>Decoded Timestamp: </span>
+          <span id="stat_out_ts">--:--.---</span>
+        </div>
+        <div style="font-size: 80%">
+          <span>Cur Bitrate: </span>
+          <span id="stat_cur_bitrate">- [kbps] / - [kbits/frame]</span>
+          <span>Avg Bitrate: </span>
+          <span id="stat_avg_bitrate">- [kbps] / - [kbits/frame]</span>
+        </div>
+      </fieldset>
     </div>
     <div>
       <fieldset>
         <legend>Source</legend>
-        <div id="src_info"></div>
         <canvas id="source"></canvas>
       </fieldset>
       <fieldset>

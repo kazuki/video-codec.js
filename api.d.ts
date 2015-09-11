@@ -8,6 +8,10 @@ interface VideoInfo {
     fps_den: number;
 }
 
+interface EncoderConfig extends VideoInfo {
+    params: any;
+}
+
 interface VideoFrame {
     timestamp: number;
     data: ArrayBuffer;
@@ -37,7 +41,7 @@ interface Packet {
 }
 
 interface IEncoder {
-    setup(cfg: VideoInfo): Promise<Packet>;
+    setup(cfg: EncoderConfig): Promise<Packet>;
     encode(frame: VideoFrame): Promise<Packet>;
 }
 
