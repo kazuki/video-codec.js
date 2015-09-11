@@ -66,6 +66,17 @@
         <fieldset style="display: none" id="daala_config">
           <legend>daala config</legend>
           <div>
+            <label for="daala_config_kf">Key Frame Rate:</label>
+            <select id="daala_config_kf">
+              <option value="1">1 (I picture only, fastest)</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="10">10</option>
+            </select>
+          </div>
+          <div>
             <label for="daala_config_quant">Quality:</label>
             <select id="daala_config_quant"></select>
           </div>
@@ -245,6 +256,7 @@
         <legend>Action</legend>
         <button id="play">Play</button>
         <button id="encdec">Encode &amp; Decode</button>
+        <button id="drop_packet">Drop Packet</button>
       </fieldset>
       <fieldset>
         <legend>Statistics</legend>
@@ -267,6 +279,12 @@
           <span id="stat_cur_bitrate">- [kbps] / - [kbits/frame]</span>
           <span>Avg Bitrate: </span>
           <span id="stat_avg_bitrate">- [kbps] / - [kbits/frame]</span>
+        </div>
+        <div style="font-size: 80%">
+          <span>Encoded Frames: </span>
+          <span id="stat_enc_frames">-</span>
+          <span>Decoded Frames: </span>
+          <span id="stat_dec_frames">-</span>
         </div>
       </fieldset>
     </div>

@@ -4,7 +4,8 @@
 
 daala_info* daala_info_create(int32_t width, int32_t height,
                               uint32_t aspect_num, uint32_t aspect_den,
-                              uint32_t timebase_num, uint32_t timebase_den)
+                              uint32_t timebase_num, uint32_t timebase_den,
+                              int keyframe_rate)
 {
     daala_info *di = (daala_info*)malloc(sizeof(daala_info));
     daala_info_init(di);
@@ -22,6 +23,7 @@ daala_info* daala_info_create(int32_t width, int32_t height,
     di->plane_info[1].ydec = 1;
     di->plane_info[2].xdec = 1;
     di->plane_info[2].ydec = 1;
+    di->keyframe_rate = keyframe_rate;
     return di;
 }
 

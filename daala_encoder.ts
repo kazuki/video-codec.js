@@ -5,7 +5,7 @@ declare function _daala_encode_create(info: number): number;
 declare function _daala_encode_ctl(encoder: number, req: number, buf: number, size: number): number;
 declare function _daala_info_create(width: number, height: number,
                                     aspect_num: number, aspect_den: number,
-                                    timebase_num: number, timebase_den: number): number;
+                                    timebase_num: number, timebase_den: number, keyframe_rate: number): number;
 declare function _daala_comment_create(): number;
 declare function _daala_encode_flush_header(encoder: number, daala_comment: number, ogg_packet: number): number;
 declare function _daala_encode_img_in(encoder: number, img: number, duration: number): number;
@@ -31,8 +31,8 @@ class DaalaEncoder {
     _setup(cfg: any) {
         this.worker.onmessage = () => {};
         this.op = Module._malloc(4 * 8);
-
-        var di = _daala_info_create(cfg.width, cfg.height, 1, 1, cfg.fps_num, cfg.fps_den);
+        var di = _daala_info_create(cfg.width, cfg.height, 1, 1, cfg.fps_num, cfg.fps_den,
+                                    cfg.params.keyframe_rate || 1);
         var dc = _daala_comment_create();
         this.img_ptr = _od_img_create(cfg.width, cfg.height);
         this.y = Module.HEAPU8.subarray(Module.getValue(this.img_ptr, 'i32'),

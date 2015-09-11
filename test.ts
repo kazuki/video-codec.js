@@ -9,6 +9,9 @@ class Test {
     src_video_info: VideoInfo;
     dst_renderer: Renderer;
 
+    // drop packet emu
+    drop_packet = false;
+
     // stat ui
     stat_cur_fps: HTMLSpanElement;
     stat_avg_fps: HTMLSpanElement;
@@ -16,6 +19,8 @@ class Test {
     stat_out_ts: HTMLSpanElement;
     stat_cur_bps: HTMLSpanElement;
     stat_avg_bps: HTMLSpanElement;
+    stat_enc_frames: HTMLSpanElement;
+    stat_dec_frames: HTMLSpanElement;
 
     constructor() {}
 
@@ -29,12 +34,17 @@ class Test {
         this.stat_out_ts = <HTMLSpanElement>document.getElementById('stat_out_ts');
         this.stat_cur_bps = <HTMLSpanElement>document.getElementById('stat_cur_bitrate');
         this.stat_avg_bps = <HTMLSpanElement>document.getElementById('stat_avg_bitrate');
+        this.stat_enc_frames = <HTMLSpanElement>document.getElementById('stat_enc_frames');
+        this.stat_dec_frames = <HTMLSpanElement>document.getElementById('stat_dec_frames');
 
         document.getElementById('play').addEventListener('click', () => {
             this._play();
         });
         document.getElementById('encdec').addEventListener('click', () => {
             this._encode_and_decode();
+        });
+        document.getElementById('drop_packet').addEventListener('click', () => {
+            this.drop_packet = true;
         });
     }
 
@@ -192,7 +202,7 @@ class Test {
             this.src_video_info = video_info;
             this.src_renderer.init(video_info);
             this.dst_renderer.init(video_info);
-            var counter = 0, total_frames = 0;
+            var counter = 0, total_frames = 0, decoded_frames = 0;
             var bytes = 0, total_bytes = 0;
             var cur_fps = 0, avg_fps = 0;
             var cur_bps = 0, cur_bpf = 0, avg_bps = 0, avg_bpf = 0;
@@ -204,17 +214,23 @@ class Test {
                     ++total_frames;
                     this.src_renderer.draw(ev);
                     encoder.encode(ev).then((packet) => {
+                        if (this.drop_packet) {
+                            this.drop_packet = false;
+                            packet.data = null;
+                        }
                         if (packet.data) {
                             bytes += packet.data.byteLength;
                             total_bytes += packet.data.byteLength;
                             decoder.decode(packet).then((frame) => {
                                 if (frame.data) {
+                                    ++decoded_frames;
                                     this._update_dec_stat(frame.timestamp);
                                     this.dst_renderer.draw(frame);
                                 }
                                 encode_frame();
                             }, (e) => {
                                 console.log('failed: decode', e);
+                                encode_frame();
                             });
                         } else {
                             encode_frame();
@@ -234,7 +250,9 @@ class Test {
                         counter = 0;
                         bytes = 0;
                     }
-                    this._update_src_stat(ev.timestamp, cur_fps, avg_fps, cur_bps, cur_bpf, avg_bps, avg_bpf);
+                    this._update_src_stat(ev.timestamp, cur_fps, avg_fps,
+                                          total_frames, decoded_frames,
+                                          cur_bps, cur_bpf, avg_bps, avg_bpf);
                 }, (err) => {
                     console.log('read failed:', err);
                 });
@@ -267,6 +285,7 @@ class Test {
                 new Encoder('daala_encoder.js'),
                 new Decoder('daala_decoder.js'),
                 {
+                    'keyframe_rate': parseInt(this._getSelectElement('daala_config_kf').value, 10),
                     'quant': parseInt(this._getSelectElement('daala_config_quant').value, 10),
                     'complexity': parseInt(this._getSelectElement('daala_config_complexity').value, 10),
                     'use_activity_masking': (<HTMLInputElement>document.getElementById('daala_config_activity_masking')).checked ? 1 : 0,
@@ -369,10 +388,15 @@ class Test {
     }
 
     _update_src_stat(timestamp: number, cur_fps: number, avg_fps: number,
+                     encoded_frames?: number, decoded_frames?: number,
                      cur_bps?: number, cur_bpf?: number, avg_bps?: number, avg_bpf?: number) {
         this.stat_in_ts.textContent = this._timestamp_to_string(timestamp);
         this.stat_cur_fps.textContent = cur_fps.toFixed(2);
         this.stat_avg_fps.textContent = avg_fps.toFixed(2);
+        if (encoded_frames && decoded_frames) {
+            this.stat_enc_frames.textContent = encoded_frames.toString();
+            this.stat_dec_frames.textContent = decoded_frames.toString();
+        }
         if (cur_bps && cur_bpf && avg_bps && avg_bpf) {
             this.stat_cur_bps.textContent =
                 (cur_bps / 1000).toFixed(0) + ' [kbps] / ' +
