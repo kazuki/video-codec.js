@@ -112,9 +112,9 @@ class Test {
                 var text = i.toString();
                 opt.value = i.toString();
                 if (i == 0) {
-                    text += " (low)";
+                    text += " (high quality)";
                 } else if (i == 63) {
-                    text += " (high)"
+                    text += " (low quality)"
                 }
                 if (idx == 1 && i == 0) {
                     opt.selected = true;
@@ -359,13 +359,13 @@ class Test {
             'kf_min_dist': 1,
             'kf_max_dist': parseInt((<HTMLInputElement>document.getElementById('libvpx_config_kf_max')).value, 10),
         };
-        if (cfg.rc_end_usage == 0 || cfg.rc_end_usage == 1)
+        if (cfg.rc_end_usage <= 2)
             cfg['rc_target_bitrate'] = parseInt((<HTMLInputElement>document.getElementById('libvpx_config_rc_bitrate')).value, 10);
-        /*if (cfg.rc_end_usage == 2 || cfg.rc_end_usage == 3) {
+        if (cfg.rc_end_usage == 2 || cfg.rc_end_usage == 3) {
             cfg['cq_level'] = parseInt(this._getSelectElement('libvpx_config_rc_quality_level').value, 10);
         }
         cfg['rc_min_quantizer'] = parseInt(this._getSelectElement('libvpx_config_rc_min_quantizer').value, 10);
-        cfg['rc_max_quantizer'] = parseInt(this._getSelectElement('libvpx_config_rc_max_quantizer').value, 10);*/
+        cfg['rc_max_quantizer'] = parseInt(this._getSelectElement('libvpx_config_rc_max_quantizer').value, 10);
         return cfg;
     }
 
