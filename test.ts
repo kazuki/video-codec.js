@@ -6,9 +6,16 @@
 
 class Test {
     src_renderer: Renderer;
-    src_stat: HTMLDivElement;
     src_video_info: VideoInfo;
     dst_renderer: Renderer;
+
+    // stat ui
+    stat_cur_fps: HTMLSpanElement;
+    stat_avg_fps: HTMLSpanElement;
+    stat_in_ts: HTMLSpanElement;
+    stat_out_ts: HTMLSpanElement;
+    stat_cur_bps: HTMLSpanElement;
+    stat_avg_bps: HTMLSpanElement;
 
     constructor() {}
 
@@ -16,7 +23,12 @@ class Test {
         this._setup_config_ui();
         this.src_renderer = new Renderer(<HTMLCanvasElement>document.getElementById('source'));
         this.dst_renderer = new Renderer(<HTMLCanvasElement>document.getElementById('decoded'));
-        this.src_stat = <HTMLDivElement>document.getElementById('src_info');
+        this.stat_cur_fps = <HTMLSpanElement>document.getElementById('stat_cur_fps');
+        this.stat_avg_fps = <HTMLSpanElement>document.getElementById('stat_avg_fps');
+        this.stat_in_ts = <HTMLSpanElement>document.getElementById('stat_in_ts');
+        this.stat_out_ts = <HTMLSpanElement>document.getElementById('stat_out_ts');
+        this.stat_cur_bps = <HTMLSpanElement>document.getElementById('stat_cur_bitrate');
+        this.stat_avg_bps = <HTMLSpanElement>document.getElementById('stat_avg_bitrate');
 
         document.getElementById('play').addEventListener('click', () => {
             this._play();
@@ -142,25 +154,28 @@ class Test {
         this._open_reader().then(([reader, video_info]) => {
             this.src_video_info = video_info;
             this.src_renderer.init(video_info);
-            this._update_src_stat(0, 0);
-            var counter = 0;
-            var fps = 0;
+            this._init_stat();
+            var counter = 0, total_frames = 0;
+            var cur_fps = 0, avg_fps = 0;
             var start = Date.now();
+            var prev = start;
             var read_frame= () => {
                 reader.read().then((ev) => {
                     ++counter;
+                    ++total_frames;
                     this.src_renderer.draw(ev);
                     window.setTimeout(() => {
                         read_frame();
                     }, 0);
 
                     var now = Date.now();
-                    if (now - start >= 1000) {
-                        fps = counter / ((now - start) / 1000);
-                        start = now;
+                    if (now - prev >= 1000) {
+                        cur_fps = counter / ((now - prev) / 1000);
+                        avg_fps = total_frames / ((now - start) / 1000);
+                        prev = now;
                         counter = 0;
                     }
-                    this._update_src_stat(ev.timestamp, fps);
+                    this._update_src_stat(ev.timestamp, cur_fps, avg_fps);
                 }, (err) => {
                     console.log('read failed:', err);
                 });
@@ -177,18 +192,26 @@ class Test {
             this.src_video_info = video_info;
             this.src_renderer.init(video_info);
             this.dst_renderer.init(video_info);
-            var counter = 0;
-            var fps = 0;
+            var counter = 0, total_frames = 0;
+            var bytes = 0, total_bytes = 0;
+            var cur_fps = 0, avg_fps = 0;
+            var cur_bps = 0, cur_bpf = 0, avg_bps = 0, avg_bpf = 0;
             var start = Date.now();
+            var prev = start;
             var encode_frame = () => {
                 reader.read().then((ev) => {
                     ++counter;
+                    ++total_frames;
                     this.src_renderer.draw(ev);
                     encoder.encode(ev).then((packet) => {
                         if (packet.data) {
+                            bytes += packet.data.byteLength;
+                            total_bytes += packet.data.byteLength;
                             decoder.decode(packet).then((frame) => {
-                                if (frame.data)
+                                if (frame.data) {
+                                    this._update_dec_stat(frame.timestamp);
                                     this.dst_renderer.draw(frame);
+                                }
                                 encode_frame();
                             }, (e) => {
                                 console.log('failed: decode', e);
@@ -200,12 +223,18 @@ class Test {
                         console.log('failed: encode', e);
                     });
                     var now = Date.now();
-                    if (now - start >= 1000) {
-                        fps = counter / ((now - start) / 1000);
-                        start = now;
+                    if (now - prev >= 1000) {
+                        cur_fps = counter / ((now - prev) / 1000);
+                        avg_fps = total_frames / ((now - start) / 1000);
+                        cur_bps = bytes * 8 / ((now - prev) / 1000);
+                        avg_bps = total_bytes * 8 / ((now - start) / 1000);
+                        cur_bpf = bytes * 8 / counter;
+                        avg_bpf = total_bytes * 8 / total_frames;
+                        prev = now;
                         counter = 0;
+                        bytes = 0;
                     }
-                    this._update_src_stat(ev.timestamp, fps);
+                    this._update_src_stat(ev.timestamp, cur_fps, avg_fps, cur_bps, cur_bpf, avg_bps, avg_bpf);
                 }, (err) => {
                     console.log('read failed:', err);
                 });
@@ -217,8 +246,8 @@ class Test {
                 fps_den: video_info.fps_den,
                 params: encoder_cfg
             }).then((packet) => {
-                this._update_src_stat(0, 0);
                 decoder.setup(decoder_cfg, packet).then(() => {
+                    this._init_stat();
                     encode_frame();
                 }, (e) => {
                     console.log('failed: decoder init', e);
@@ -332,13 +361,30 @@ class Test {
         });
     }
 
-    _update_src_stat(timestamp: number, fps: number) {
-        var txt = this._timestamp_to_string(timestamp)
-            + ' (size:' + this.src_video_info.width + 'x' + this.src_video_info.height
-            + ', fps:' + fps.toFixed(2) + ')';
-        if (!this.src_stat.firstChild)
-            this.src_stat.appendChild(document.createTextNode(''));
-        this.src_stat.firstChild.textContent = txt;
+    _init_stat() {
+        document.getElementById('stat_frame_size').textContent =
+            this.src_video_info.width.toString() + 'x' +
+            this.src_video_info.height.toString();
+        this._update_src_stat(0, 0, 0);
+    }
+
+    _update_src_stat(timestamp: number, cur_fps: number, avg_fps: number,
+                     cur_bps?: number, cur_bpf?: number, avg_bps?: number, avg_bpf?: number) {
+        this.stat_in_ts.textContent = this._timestamp_to_string(timestamp);
+        this.stat_cur_fps.textContent = cur_fps.toFixed(2);
+        this.stat_avg_fps.textContent = avg_fps.toFixed(2);
+        if (cur_bps && cur_bpf && avg_bps && avg_bpf) {
+            this.stat_cur_bps.textContent =
+                (cur_bps / 1000).toFixed(0) + ' [kbps] / ' +
+                (cur_bpf / 1000).toFixed(0) + ' [kbits/frame]';
+            this.stat_avg_bps.textContent =
+                (avg_bps / 1000).toFixed(0) + ' [kbps] / ' +
+                (avg_bpf / 1000).toFixed(0) + ' [kbits/frame]';
+        }
+    }
+
+    _update_dec_stat(timestamp: number) {
+        this.stat_out_ts.textContent = this._timestamp_to_string(timestamp);
     }
 
     _timestamp_to_string(timestamp: number) {

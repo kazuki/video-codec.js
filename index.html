@@ -246,11 +246,33 @@
         <button id="play">Play</button>
         <button id="encdec">Encode &amp; Decode</button>
       </fieldset>
+      <fieldset>
+        <legend>Statistics</legend>
+        <div style="font-size: 80%">
+          <span>Frame Size: </span>
+          <span id="stat_frame_size">-</span>
+          <span>Cur FrameRate: </span>
+          <span id="stat_cur_fps">- [fps]</span>
+          <span>Avg FrameRate: </span>
+          <span id="stat_avg_fps">- [fps]</span>
+        </div>
+        <div style="font-size: 80%">
+          <span>Source Timestamp: </span>
+          <span id="stat_in_ts">--:--.---</span>
+          <span>Decoded Timestamp: </span>
+          <span id="stat_out_ts">--:--.---</span>
+        </div>
+        <div style="font-size: 80%">
+          <span>Cur Bitrate: </span>
+          <span id="stat_cur_bitrate">- [kbps] / - [kbits/frame]</span>
+          <span>Avg Bitrate: </span>
+          <span id="stat_avg_bitrate">- [kbps] / - [kbits/frame]</span>
+        </div>
+      </fieldset>
     </div>
     <div>
       <fieldset>
         <legend>Source</legend>
-        <div id="src_info"></div>
         <canvas id="source"></canvas>
       </fieldset>
       <fieldset>
