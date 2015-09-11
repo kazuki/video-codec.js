@@ -323,6 +323,7 @@ class Test {
                     'background_detection': (<HTMLInputElement>document.getElementById('openh264_config_bg_detect')).checked,
                     'adaptive_quant': (<HTMLInputElement>document.getElementById('openh264_config_adaptive_quant')).checked,
                     'scene_change_detect': (<HTMLInputElement>document.getElementById('openh264_config_scene_detect')).checked,
+                    'keyframe_interval': parseInt((<HTMLInputElement>document.getElementById('openh264_config_kf')).value, 10),
                 },
                 {}
             ];
@@ -354,6 +355,9 @@ class Test {
             'cpuused': parseInt(this._getSelectElement('libvpx_config_cpuused').value, 10),
             'rc_end_usage': parseInt(this._getSelectElement('libvpx_config_rc_mode').value, 10),
             'lag_in_frames': parseInt(this._getSelectElement('libvpx_config_lag').value, 10),
+            'kf_mode': 0,
+            'kf_min_dist': 1,
+            'kf_max_dist': parseInt((<HTMLInputElement>document.getElementById('libvpx_config_kf_max')).value, 10),
         };
         if (cfg.rc_end_usage == 0 || cfg.rc_end_usage == 1)
             cfg['rc_target_bitrate'] = parseInt((<HTMLInputElement>document.getElementById('libvpx_config_rc_bitrate')).value, 10);

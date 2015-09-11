@@ -147,6 +147,10 @@
             <label for="libvpx_config_lag">Lag:</label>
             <select id="libvpx_config_lag"></select>
           </div>
+          <div>
+            <label for="libvpx_config_kf_max">KeyFrame Interval:</label>
+            <input type="text" size="3" id="libvpx_config_kf_max" value="100">
+          </div>
           <fieldset style="display: block; margin: 1ex 0ex">
             <legend>Rate-control</legend>
             <div>
@@ -192,6 +196,10 @@
               <option value="1">Medium</option>
               <option value="2">High</option>
             </select>
+          </div>
+          <div>
+            <label for="openh264_config_kf">KeyFrame Interval:</label>
+            <input type="text" size="3" id="openh264_config_kf" value="100">
           </div>
           <div>
             <label for="openh264_config_rc_mode">Rate-Control Mode:</label>

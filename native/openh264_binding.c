@@ -58,6 +58,11 @@ int WelsSVCEncoderEncodeFrame(ISVCEncoder *encoder, const SSourcePicture* kpSrcP
     return (*encoder)->EncodeFrame(encoder, kpSrcPic, pBsInfo);
 }
 
+int WelsSVCEncoderForceIntraFrame(ISVCEncoder *encoder)
+{
+    return (*encoder)->ForceIntraFrame(encoder, 1);
+}
+
 int WelsInitializeDecoder(ISVCDecoder *decoder)
 {
     SDecodingParam sDecParam = {0};
