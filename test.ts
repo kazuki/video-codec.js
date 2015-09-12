@@ -227,14 +227,11 @@ class Test {
                                     this._update_dec_stat(frame.timestamp);
                                     this.dst_renderer.draw(frame);
                                 }
-                                encode_frame();
                             }, (e) => {
                                 console.log('failed: decode', e);
-                                encode_frame();
                             });
-                        } else {
-                            encode_frame();
                         }
+                        encode_frame();
                     }, (e) => {
                         console.log('failed: encode', e);
                     });

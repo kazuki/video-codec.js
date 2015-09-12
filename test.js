@@ -80,7 +80,8 @@ var Decoder = (function () {
 var Camera = (function () {
     function Camera() {
         this._video = null;
-        this._cvs = null;
+        this._canvas = null;
+        this._context = null;
         this._buf = null;
     }
     Camera.prototype.open = function (args) {
@@ -97,9 +98,10 @@ var Camera = (function () {
                 _this._video.addEventListener('loadedmetadata', function (e) {
                     var w = _this._width = _this._video.videoWidth;
                     var h = _this._height = _this._video.videoHeight;
-                    _this._cvs = document.createElement('canvas');
-                    _this._cvs.width = w;
-                    _this._cvs.height = h;
+                    _this._canvas = document.createElement('canvas');
+                    _this._canvas.width = w;
+                    _this._canvas.height = h;
+                    _this._context = _this._canvas.getContext('2d');
                     _this._buf = new ArrayBuffer(w * h * 1.5);
                     _this._y = new Uint8ClampedArray(_this._buf, 0, w * h);
                     _this._u = new Uint8ClampedArray(_this._buf, w * h, w * h / 4);
@@ -149,7 +151,6 @@ var Camera = (function () {
     Camera.prototype.read = function () {
         var _this = this;
         return new Promise(function (resolve, reject) {
-            var ctx = _this._cvs.getContext('2d');
             var timestamp = _this._video.currentTime;
             if (_this._first_timestamp == -1) {
                 _this._first_timestamp = timestamp;
@@ -166,8 +167,9 @@ var Camera = (function () {
                 logic_frame_idx = _this._prev_frame_index + 1;
             _this._prev_frame_index = logic_frame_idx;
             _this._next_timestamp = (logic_frame_idx + 1) * _this._sec_per_frame;
-            ctx.drawImage(_this._video, 0, 0, _this._width, _this._height, 0, 0, _this._width, _this._height);
-            var img = ctx.getImageData(0, 0, _this._width, _this._height);
+            var start = Date.now();
+            _this._context.drawImage(_this._video, 0, 0, _this._width, _this._height, 0, 0, _this._width, _this._height);
+            var img = _this._context.getImageData(0, 0, _this._width, _this._height);
             var rgba = img.data;
             for (var y = 0, j = 0; y < img.height; y += 2) {
                 var p = y * img.width;
@@ -211,42 +213,54 @@ var Renderer = (function () {
     Renderer.prototype.init = function (info) {
         this._canvas.width = info.width;
         this._canvas.height = info.height;
-    };
-    Renderer.prototype.draw = function (frame) {
-        var ctx = this._canvas.getContext('2d');
-        var img = ctx.getImageData(0, 0, this._canvas.width, this._canvas.height);
+        this._context = this._canvas.getContext('2d');
+        var img = this._img = this._context.createImageData(info.width, info.height);
         var rgba = img.data;
         for (var y = 0; y < img.height; y += 2) {
             var p0 = y * img.width;
             var p1 = p0 + img.width;
             for (var x = 0; x < img.width; x += 2) {
+                rgba[(p0 + x) * 4 + 3] =
+                    rgba[(p0 + x) * 4 + 7] =
+                        rgba[(p1 + x) * 4 + 3] =
+                            rgba[(p1 + x) * 4 + 7] = 255;
+            }
+        }
+    };
+    Renderer.prototype.draw = function (frame) {
+        var start = Date.now();
+        var img = this._img;
+        var rgba = img.data;
+        for (var y = 0; y < img.height; y += 2) {
+            var p0 = y * img.width;
+            var p1 = p0 + img.width;
+            var p4 = p0 / 4;
+            for (var x = 0; x < img.width; x += 2) {
                 var y0 = 1.164 * (frame.y[p0 + x] - 16);
                 var y1 = 1.164 * (frame.y[p0 + x + 1] - 16);
                 var y2 = 1.164 * (frame.y[p1 + x] - 16);
                 var y3 = 1.164 * (frame.y[p1 + x + 1] - 16);
-                var u = frame.u[p0 / 4 + x / 2], v = frame.v[p0 / 4 + x / 2];
+                var u = frame.u[p4 + x / 2], v = frame.v[p4 + x / 2];
                 var t0 = 1.596 * (v - 128);
                 var t1 = -0.391 * (u - 128) - 0.813 * (v - 128);
                 var t2 = 2.018 * (u - 128);
-                rgba[(p0 + x) * 4] = y0 + t0;
-                rgba[(p0 + x) * 4 + 1] = y0 + t1;
-                rgba[(p0 + x) * 4 + 2] = y0 + t2;
-                rgba[(p0 + x) * 4 + 3] = 255;
-                rgba[(p0 + x) * 4 + 4] = y1 + t0;
-                rgba[(p0 + x) * 4 + 5] = y1 + t1;
-                rgba[(p0 + x) * 4 + 6] = y1 + t2;
-                rgba[(p0 + x) * 4 + 7] = 255;
-                rgba[(p1 + x) * 4] = y2 + t0;
-                rgba[(p1 + x) * 4 + 1] = y2 + t1;
-                rgba[(p1 + x) * 4 + 2] = y2 + t2;
-                rgba[(p1 + x) * 4 + 3] = 255;
-                rgba[(p1 + x) * 4 + 4] = y3 + t0;
-                rgba[(p1 + x) * 4 + 5] = y3 + t1;
-                rgba[(p1 + x) * 4 + 6] = y3 + t2;
-                rgba[(p1 + x) * 4 + 7] = 255;
+                var p2 = (p0 + x) * 4;
+                var p3 = (p1 + x) * 4;
+                rgba[p2] = y0 + t0;
+                rgba[p2 + 1] = y0 + t1;
+                rgba[p2 + 2] = y0 + t2;
+                rgba[p2 + 4] = y1 + t0;
+                rgba[p2 + 5] = y1 + t1;
+                rgba[p2 + 6] = y1 + t2;
+                rgba[p3] = y2 + t0;
+                rgba[p3 + 1] = y2 + t1;
+                rgba[p3 + 2] = y2 + t2;
+                rgba[p3 + 4] = y3 + t0;
+                rgba[p3 + 5] = y3 + t1;
+                rgba[p3 + 6] = y3 + t2;
             }
         }
-        ctx.putImageData(img, 0, 0);
+        this._context.putImageData(img, 0, 0);
     };
     return Renderer;
 })();
@@ -634,15 +648,11 @@ var Test = (function () {
                                     _this._update_dec_stat(frame.timestamp);
                                     _this.dst_renderer.draw(frame);
                                 }
-                                encode_frame();
                             }, function (e) {
                                 console.log('failed: decode', e);
-                                encode_frame();
                             });
                         }
-                        else {
-                            encode_frame();
-                        }
+                        encode_frame();
                     }, function (e) {
                         console.log('failed: encode', e);
                     });
