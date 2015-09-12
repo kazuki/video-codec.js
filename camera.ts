@@ -3,7 +3,8 @@
 
 class Camera implements IReader {
     _video: HTMLVideoElement = null;
-    _cvs: HTMLCanvasElement = null;
+    _canvas: HTMLCanvasElement = null;
+    _context: CanvasRenderingContext2D = null;
     _buf: ArrayBuffer = null;
     _y: Uint8ClampedArray;
     _u: Uint8ClampedArray;
@@ -29,9 +30,10 @@ class Camera implements IReader {
                 this._video.addEventListener('loadedmetadata', (e) => {
                     var w = this._width = this._video.videoWidth;
                     var h = this._height = this._video.videoHeight;
-                    this._cvs = document.createElement('canvas');
-                    this._cvs.width = w;
-                    this._cvs.height = h;
+                    this._canvas = document.createElement('canvas');
+                    this._canvas.width = w;
+                    this._canvas.height = h;
+                    this._context = this._canvas.getContext('2d');
                     this._buf = new ArrayBuffer(w * h * 1.5);
                     this._y = new Uint8ClampedArray(this._buf, 0, w * h);
                     this._u = new Uint8ClampedArray(this._buf, w * h, w * h / 4);
@@ -79,7 +81,6 @@ class Camera implements IReader {
     }
     read(): Promise<ReadEventArgs> {
         return new Promise((resolve, reject) => {
-            var ctx = this._cvs.getContext('2d');
             var timestamp = this._video.currentTime;
             if (this._first_timestamp == -1) {
                 this._first_timestamp = timestamp;
@@ -97,10 +98,11 @@ class Camera implements IReader {
             this._prev_frame_index = logic_frame_idx;
             this._next_timestamp = (logic_frame_idx + 1) * this._sec_per_frame;
 
-            ctx.drawImage(this._video,
-                          0, 0, this._width, this._height,
-                          0, 0, this._width, this._height);
-            var img = ctx.getImageData(0, 0, this._width, this._height);
+            var start = Date.now();
+            this._context.drawImage(this._video,
+                                    0, 0, this._width, this._height,
+                                    0, 0, this._width, this._height);
+            var img = this._context.getImageData(0, 0, this._width, this._height);
             var rgba = img.data;
             for (var y = 0, j = 0; y < img.height; y += 2) {
                 var p = y * img.width;
