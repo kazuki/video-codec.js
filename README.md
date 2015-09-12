@@ -24,88 +24,131 @@ $ make
 
 ## API
 
-エンコーダ／デコーダはWeb Workers上で動作します．Workerとの通信は次のようなプロトコルで行います．
+エンコーダ／デコーダはWeb Workers上で動作します．
+通常は api.d.ts で定義している IEncoder/IDecoder インタフェースを実装した，
+Encoder/Decoderクラスを利用します (utils.tsで定義)．
+
+エンコーダ／デコーダの各メソッドは全てPromiseを返却します．
+
+以下，全てのサンプルはTypeScriptを例に上げますが，
+もちろんJavaScriptからも利用できます．
 
 ### エンコーダ
 
-#### 初期化
+#### コンストラクタ
 
-Workerに対して次のメッセージを送ることでエンコーダを初期化します．
-初期化は一度しか実行できないほか，Workerに対して一番最初に送るメッセージである必要があります．
+利用したい映像符号のエンコーダのJavaScriptファイルを指定します．
 
 ```
-{
-    width: number   /* (required) フレームの幅(px) */,
-    height: number  /* (required) フレームの高さ(px) */,
-    fps_num: number /* (required) フレームレート(分子) */,
-    fps_den: number /* (required) フレームレート(分母) */,
-}
+// VPxエンコーダを利用する場合
+var encoder: IEncoder = new Encoder('vpx_encoder.js');
+
+// Daalaエンコーダを利用する場合
+var encoder: IEncoder = new Encoder('daala_encoder.js');
+
+// openH264のエンコーダを利用する場合
+var encoder: IEncoder = new Encoder('openh264_encoder.js');
+```
+
+#### 初期化
+
+エンコーダは初期化関数を一番最初に1度だけ呼び出す必要があります．
+api.d.ts で定義している EncoderConfig インタフェースに基づく設定情報を渡します．
+
+setupではコーデックによってはヘッダ情報等を含むパケットを返却します．
+packet.dataがnullの場合は，ヘッダ情報等は特に必要のないコーデックです．
+
+```
+encoder.setup({
+    width: 320,
+    height: 160,
+    fps_num: 10,
+    fps_den: 1,
+    params: { /* コーデック固有のエンコードパラメータ */ }
+}).then((packet: Packet) => {
+    console.log('Setup成功', packet);
+}, (e) => {
+    console.log('Setup失敗', e);
+});
 ```
 
 #### エンコード
 
-エンコード対象のフレーム(ArrayBuffer/ArrayBufferView)をpostMessageで送信することでエンコードします．
-色空間はYUV420(I420)のみを受け付けます．
+YUV420(I420)形式のフレームをエンコードします．
+RGB等は受け付けないので，必ずYUV420(I420)に変換してから，api.d.tsで定義しているVideoFrameの形式で渡します．
+
+なお，VideoFrameのtransferableがtrueの場合は，Workerにメモリをムーブするので，
+呼び出し元では利用できなくなることを表します．
+
+エンコードが成功するとPacketが返却されますが，
+コーデックによってはフレームのエンコードが成功した場合でもバイナリを出力せずに遅延させる場合が有ります．
+その場合は，Packetのdataがnullになります．
 
 ```
-{
-    timestamp: number,
-    data: ArrayBuffer,
-    y: Uint8ClampedArray,
-    u: Uint8ClampedArray,
-    v: Uint8ClampedArray,
-    transferable: boolean,
-}
-```
-
-#### エンコード完了処理
-
-postMessageで次のメッセージを送信することにより，
-エンコーダに全フレームの送信を終えたことを通知し，
-すべての符号化されたデータを送出するように指示します．
-
-```
-{
-    flush: true
-}
-```
-
-#### エンコード済みデータ
-
-WebWorkerでエンコードされたフレームは，onmessageイベントハンドラを経由して受け取ります．
-
-```
-{
-    status: number /* (required) ステータスコード
-                      0: フレームのエンコードに成功(バイナリデータ有り)
-                      1: フレームのエンコードに成功(バイナリデータ無し)
-                      それ以外: エラー */,
-    error: string /* (optional) statusがエラーの時にエラーメッセージが格納される */,
-    data: ArrayBuffer|ArrayBufferView /* (optional) status=0 の時にバイナリデータが格納される */,
-}
+encoder.encode({
+    timestamp: 0 /* フレームのタイムスタンプ */,
+    data: buf /* y,u,vのベースとなっているArrayBuffer*/,
+    y: /* Y成分 (Uint8ClampedArray) */,
+    u: /* U成分 (Uint8ClampedArray) */,
+    v: /* V成分 (Uint8ClampedArray) */,
+    transferable: true /* dataがWorkerに転送可能かどうか示す */,
+}).then((packet) => {
+    console.log('エンコード成功:', packet);
+}, (e) => {
+    console.log('エンコード失敗:', e);
+});
 ```
 
 ### デコーダ
 
-#### デコード
+#### コンストラクタ
 
-符号化された情報(ArrayBuffer|ArrayBufferView)をpostMessageを用いてデコーダに送信します．
-
-#### デコード済みフレーム受信
-
-WebWorkerのonmessageイベントハンドラ経由でデコードしたフレームを受信します．
+エンコーダと同様に，利用したい映像符号のデコーダに対応するJavaScriptを指定します．
 
 ```
-{
-    status: number /* (required) ステータスコード．0は成功．それ以外は失敗 */
-    error: string  /* (optional) status != 0の時にエラーメッセージが入る */
-    width: number   /* (optional) フレームの幅(px) */,
-    height: number  /* (optional) フレームの高さ(px) */,
-    data: ArrayBuffer|ArrayBufferView /* (optional) */,
-}
+// VPx
+var decoder: IDecoder = new Decoder('vpx_decoder.js');
+
+// Daala
+var decoder: IDecoder = new Decoder('daala_decoder.js');
+
+// openH264
+var decoder: IDecoder = new Decoder('openh264_decoder.js');
+```
+
+#### 初期化
+
+デコーダもエンコーダと同様に，一番最初に1度だけ初期化関数を呼び出す必要が有ります．
+第一引数にはデコーダに渡すパラメータを指定し，
+第二引数にはエンコーダのsetupで戻ってきたパケット情報を指定します．
+
+```
+decoder.setup({}, packet).then(() => {
+    console.log('デコーダ初期化成功');
+}, (e) => {
+    console.log('デコーダの初期化に失敗: ', e);
+});
+```
+
+#### デコード
+
+エンコーダのencode関数の戻り値であるパケットをデコードします．
+パケットをデコードした結果，フレームが返却されないことも有り，その場合はVideoFrameのdataがnullになります．
+
+```
+decoder.decode(packet).then((frame: VideoFrame) => {
+    if (frame.data) {
+        console.log('デコード成功: フレーム有り');
+    } else {
+        console.log('デコード成功: フレーム無し');
+    }
+}, (e) => {
+    console.log('デコード失敗: ', e);
+});
 ```
 
 ライセンス
 ----------
 
-各種ライブラリのライセンスに準拠します．
+各種ライブラリは各種ライブラリのライセンスに準拠します．
+それ以外の部分は修正BSDライセンスになります．
