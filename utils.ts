@@ -7,8 +7,8 @@ class Encoder implements IEncoder {
         this.worker = new Worker(worker_script_path);
     }
 
-    setup(cfg: VideoInfo): Promise<any> {
-        return new Promise((resolve, reject) => {
+    setup(cfg: EncoderConfig): Promise<Packet> {
+        return new Promise<Packet>((resolve, reject) => {
             this.worker.onmessage = (ev) => {
                 if (ev.data.status == 0) {
                     resolve(ev.data);
@@ -21,7 +21,7 @@ class Encoder implements IEncoder {
     }
 
     encode(frame: VideoFrame): Promise<Packet> {
-        return new Promise((resolve, reject) => {
+        return new Promise<Packet>((resolve, reject) => {
             this.worker.onmessage = (ev) => {
                 if (ev.data.status == 0) {
                     resolve(ev.data);
@@ -46,7 +46,7 @@ class Decoder implements IDecoder {
     }
 
     setup(cfg: any, packet: Packet): Promise<any> {
-        return new Promise((resolve, reject) => {
+        return new Promise<any>((resolve, reject) => {
             this.worker.onmessage = (ev) => {
                 if (ev.data.status == 0) {
                     resolve(ev.data);

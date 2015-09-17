@@ -18,7 +18,7 @@ class Camera implements IReader {
     _sec_per_frame: number;
 
     open(args: any): Promise<VideoInfo> {
-        return new Promise((resolve, reject) => {
+        return new Promise<VideoInfo>((resolve, reject) => {
             var video_constraints: any = true;
             var callback = (strm) => {
                 this._fps = args['fps'] || 5;
@@ -80,7 +80,7 @@ class Camera implements IReader {
         });
     }
     read(): Promise<ReadEventArgs> {
-        return new Promise((resolve, reject) => {
+        return new Promise<ReadEventArgs>((resolve, reject) => {
             var timestamp = this._video.currentTime;
             if (this._first_timestamp == -1) {
                 this._first_timestamp = timestamp;
@@ -126,6 +126,8 @@ class Camera implements IReader {
             resolve({
                 timestamp: timestamp,
                 ended: false,
+                width: this._width,
+                height: this._height,
                 data: this._buf,
                 y: this._y,
                 u: this._u,

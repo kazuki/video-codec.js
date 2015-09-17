@@ -37,14 +37,14 @@ class VPXDecoder {
 
         this.ctx = _allocate_vpx_codec_ctx();
         if (_vpx_codec_dec_init2(this.ctx, this.iface, 0, 0)) {
-            this.worker.postMessage({status: -1});
+            this.worker.postMessage(<IResult>{status: -1});
             return;
         }
 
         this.worker.onmessage = (e: MessageEvent) => {
             this._decode(e.data);
         };
-        this.worker.postMessage({status: 0});
+        this.worker.postMessage(<IResult>{status: 0});
     }
 
     _decode(packet: Packet) {
@@ -52,7 +52,7 @@ class VPXDecoder {
         this.buf.set(new Uint8Array(packet.data));
         var ret = _vpx_codec_decode(this.ctx, this.buf_ptr, packet.data.byteLength, 0, 0);
         if (ret) {
-            this.worker.postMessage({status: -1});
+            this.worker.postMessage(<IResult>{status: -1});
             return;
         }
         Module.setValue(this.iter, 0, 'i32');
@@ -62,9 +62,11 @@ class VPXDecoder {
             frame = this._vpx_img_to_video_frame(img);
         }
         if (frame) {
-            this.worker.postMessage({
+            this.worker.postMessage(<VideoFrame&IResult>{
                 status: 0,
                 timestamp: 0,
+                width: frame.width,
+                height: frame.height,
                 data: frame.data,
                 y: frame.y,
                 u: frame.u,
@@ -72,7 +74,10 @@ class VPXDecoder {
                 transferable: true,
             });
         } else {
-            this.worker.postMessage({status: 0, data: null, y: null, u: null, v: null});
+            this.worker.postMessage(<VideoFrame&IResult>{
+                status: 0, timestamp: null, width: null, height: null,
+                data: null, y: null, u: null, v: null
+            });
         }
     }
 

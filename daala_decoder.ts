@@ -51,7 +51,7 @@ class DaalaDecoder {
             break;
         }
         if (!header_ok) {
-            this.worker.postMessage({status: -1});
+            this.worker.postMessage(<IResult>{status: -1});
             return;
         }
 
@@ -59,26 +59,26 @@ class DaalaDecoder {
         _daala_setup_free(Module.getValue(ds, 'i32'));
         Module._free(ds);
         if (this.decoder == 0) {
-            this.worker.postMessage({status: -2});
+            this.worker.postMessage(<IResult>{status: -2});
             return;
         }
         this.worker.onmessage = (e: MessageEvent) => {
             this._decode(e.data.data);
         };
-        this.worker.postMessage({status: 0});
+        this.worker.postMessage(<IResult>{status: 0});
     }
 
     _decode(data: ArrayBuffer) {
         this._parse_ogg_packet(new Uint8Array(data));
         if (_daala_decode_packet_in(this.decoder, this.img, this.op) != 0) {
-            this.worker.postMessage({status: -1});
+            this.worker.postMessage(<IResult>{status: -1});
             return;
         }
         var frame = this._od_img_to_video_frame();
         this.worker.postMessage(frame, [frame.data]);
     }
 
-    _od_img_to_video_frame(): VideoFrame {
+    _od_img_to_video_frame(): VideoFrame&IResult {
         var width = Module.getValue(this.img + 4 * 4 * 4 + 4, 'i32');
         var height = Module.getValue(this.img + 4 * 4 * 4 + 8, 'i32');
         var y_stride = Module.getValue(this.img + 12, 'i32');
@@ -104,6 +104,8 @@ class DaalaDecoder {
         return {
             status: 0,
             timestamp: 0,
+            width: width,
+            height: height,
             data: out,
             y: new Uint8ClampedArray(out_y.buffer, out_y.byteOffset, out_y.byteLength),
             u: new Uint8ClampedArray(out_u.buffer, out_u.byteOffset, out_u.byteLength),

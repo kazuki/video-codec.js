@@ -32,23 +32,23 @@ class libde265Encoder {
         this.width = cfg.width;
         this.height = cfg.height;
         if (_de265_init() != 0) {
-            this.worker.postMessage({status: -1});
+            this.worker.postMessage(<IResult>{status: -1});
             return;
         }
         this.ctx = _en265_new_encoder();
         if (this.ctx == 0) {
-            this.worker.postMessage({status: -1});
+            this.worker.postMessage(<IResult>{status: -1});
             return;
         }
         _libde265_encoder_hack(this.ctx, this.width, this.height);
         if (_en265_start_encoder(this.ctx, 0) != 0) {
-            this.worker.postMessage({status: -1});
+            this.worker.postMessage(<IResult>{status: -1});
             return;
         }
         this.worker.onmessage = (e: MessageEvent) => {
             this._encode(e.data);
         };
-        this.worker.postMessage({status: 0, data: null});
+        this.worker.postMessage(<Packet&IResult>{status: 0, data: null});
     }
 
     _encode(frame: VideoFrame) {
@@ -65,7 +65,7 @@ class libde265Encoder {
             console.log("get_packet:", pkt);
             _en265_free_packet(this.ctx, pkt);
         }
-        this.worker.postMessage({
+        this.worker.postMessage(<Packet&IResult>{
             status: 0,
             data: null,
         });

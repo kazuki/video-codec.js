@@ -43,7 +43,7 @@ class DaalaEncoder {
                                         Module.getValue(this.img_ptr + 4 * 8, 'i32') + cfg.width * cfg.height / 4);
         this.encoder = _daala_encode_create(di);
         if (this.encoder == 0) {
-            this.worker.postMessage({status: -1});
+            this.worker.postMessage(<IResult>{status: -1});
             return;
         }
 
@@ -70,7 +70,7 @@ class DaalaEncoder {
         var packets = [];
         var bytes = 0;
         if (_daala_encode_flush_header(this.encoder, dc, this.op) <= 0) {
-            this.worker.postMessage({status: -1});
+            this.worker.postMessage(<IResult>{status: -1});
             return;
         }
         packets.push(this._ogg_packet_to_arraybuffer(this.op));
@@ -80,7 +80,7 @@ class DaalaEncoder {
             if (ret == 0)
                 break;
             if (ret < 0) {
-                this.worker.postMessage({status: -1});
+                this.worker.postMessage(<IResult>{status: -1});
                 return;
             }
             packets.push(this._ogg_packet_to_arraybuffer(this.op));
@@ -98,7 +98,7 @@ class DaalaEncoder {
             view8.set(new Uint8Array(packets[i]), off);
             off += packets[i].byteLength;
         }
-        this.worker.postMessage({
+        this.worker.postMessage(<Packet&IResult>{
             status: 0,
             data: data
         }, [data]);
@@ -110,28 +110,28 @@ class DaalaEncoder {
         this.v.set(new Uint8Array(frame.v.buffer, frame.v.byteOffset, frame.v.byteLength), 0);
         var ret = _daala_encode_img_in(this.encoder, this.img_ptr, 0);
         if (ret != 0) {
-            this.worker.postMessage({status: -1});
+            this.worker.postMessage(<IResult>{status: -1});
             return;
         }
         var ret = _daala_encode_packet_out(this.encoder, 0, this.op);
         if (ret < 0) {
-            this.worker.postMessage({status: -1});
+            this.worker.postMessage(<IResult>{status: -1});
             return;
         }
         if (ret > 0) {
             var pkt = this._ogg_packet_to_arraybuffer(this.op);
             if (_daala_encode_packet_out(this.encoder, 0, this.op) != 0) {
                 // not supported
-                this.worker.postMessage({status: -2});
+                this.worker.postMessage(<IResult>{status: -2});
                 return;
             }
-            this.worker.postMessage({
+            this.worker.postMessage(<Packet&IResult>{
                 status: 0,
                 data: pkt
             }, [pkt]);
         } else {
             // このルートを通る可能性ってある？
-            this.worker.postMessage({status: 0});
+            this.worker.postMessage(<Packet&IResult>{status: 0, data: null});
         }
     }
 

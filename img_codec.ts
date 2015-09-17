@@ -24,7 +24,7 @@ class MotionImageEncoder implements IEncoder {
         this._options = 1.0;
         if (opt.quality != undefined)
             this._options = opt.quality;
-        return new Promise((resolve, reject) => {
+        return new Promise<Packet>((resolve, reject) => {
             if (MotionImageEncoder.MIME.indexOf(this._type) < 0) {
                 reject({status: -1, reason: 'unknown type'});
                 return;
@@ -38,7 +38,7 @@ class MotionImageEncoder implements IEncoder {
     }
 
     encode(frame: VideoFrame): Promise<Packet> {
-        return new Promise((resolve, reject) => {
+        return new Promise<Packet>((resolve, reject) => {
             this._convert(frame, this._data.width, this._data.height, this._data.data);
             this._context.putImageData(this._data, 0, 0);
             if (this._canvas.toBlob) {
@@ -121,7 +121,7 @@ class MotionImageDecoder implements IDecoder {
     }
 
     setup(cfg: any, packet: Packet): Promise<any> {
-        return new Promise((resolve, reject) => {
+        return new Promise<any>((resolve, reject) => {
             if (packet && packet.data && packet.data.byteLength == 12) {
                 var header = new Uint32Array(packet.data);
                 this._mime = MotionImageEncoder.MIME[header[0]];
@@ -145,14 +145,15 @@ class MotionImageDecoder implements IDecoder {
     }
 
     decode(packet: Packet): Promise<VideoFrame> {
-        return new Promise((resolve, reject) => {
+        return new Promise<VideoFrame>((resolve, reject) => {
             var blob = new Blob([packet.data], {'type': this._mime});
             this._img.onload = () => {
                 this._context.drawImage(this._img, 0, 0);
                 this._convert(this._context.getImageData(0, 0, this._w, this._h));
                 resolve({
                     timestamp: 0,
-                    ended: false,
+                    width: this._w,
+                    height: this._h,
                     data: this._buf,
                     y: this._y,
                     u: this._u,

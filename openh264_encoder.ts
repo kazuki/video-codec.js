@@ -88,7 +88,7 @@ class OpenH264Encoder {
         this.pic = Module._malloc(_SizeOfSSourcePicture());
         this.bsi = Module._malloc(_SizeOfSFrameBSInfo());
         _SetupSSourcePicture(this.pic, vi.width, vi.height, this.i420);
-        this.worker.postMessage({
+        this.worker.postMessage(<Packet&IResult>{
             status: ret,
             data: null,
         });
@@ -103,9 +103,7 @@ class OpenH264Encoder {
         }
         var ret = _WelsSVCEncoderEncodeFrame(this.encoder, this.pic, this.bsi);
         if (ret != 0) {
-            this.worker.postMessage({
-                status: ret
-            });
+            this.worker.postMessage(<IResult>{status: ret});
             return;
         }
         ++this.num_of_frames;
@@ -119,7 +117,7 @@ class OpenH264Encoder {
             size += info.layers[i].bitstream.length;
         }
         if (size == 0) {
-            this.worker.postMessage({
+            this.worker.postMessage(<Packet&IResult>{
                 status: 0,
                 data: null,
             });
@@ -130,7 +128,7 @@ class OpenH264Encoder {
                 tmp.set(info.layers[i].bitstream, off);
                 off += info.layers[i].bitstream.length;
             }
-            this.worker.postMessage({
+            this.worker.postMessage(<Packet&IResult>{
                 status: 0,
                 data: tmp.buffer,
             }, [tmp.buffer]);
