@@ -120,6 +120,7 @@ class OpenH264Encoder {
             this.worker.postMessage(<Packet&IResult>{
                 status: 0,
                 data: null,
+                frame_type: FrameType.Unknown
             });
         } else {
             var tmp = new Uint8Array(size);
@@ -128,9 +129,18 @@ class OpenH264Encoder {
                 tmp.set(info.layers[i].bitstream, off);
                 off += info.layers[i].bitstream.length;
             }
+            var ftype = FrameType.Unknown;
+            if (info.frameType == 1) {
+                ftype = FrameType.IDR;
+            } else if (info.frameType == 2) {
+                ftype = FrameType.I;
+            } else if (info.frameType == 3) {
+                ftype = FrameType.P;
+            }
             this.worker.postMessage(<Packet&IResult>{
                 status: 0,
                 data: tmp.buffer,
+                frame_type: ftype
             }, [tmp.buffer]);
         }
     }

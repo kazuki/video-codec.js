@@ -100,7 +100,8 @@ class DaalaEncoder {
         }
         this.worker.postMessage(<Packet&IResult>{
             status: 0,
-            data: data
+            data: data,
+            frame_type: FrameType.Unknown
         }, [data]);
     }
 
@@ -127,11 +128,16 @@ class DaalaEncoder {
             }
             this.worker.postMessage(<Packet&IResult>{
                 status: 0,
-                data: pkt
+                data: pkt,
+                frame_type: FrameType.Unknown
             }, [pkt]);
         } else {
             // このルートを通る可能性ってある？
-            this.worker.postMessage(<Packet&IResult>{status: 0, data: null});
+            this.worker.postMessage(<Packet&IResult>{
+                status: 0,
+                data: null,
+                frame_type: FrameType.Unknown
+            });
         }
     }
 

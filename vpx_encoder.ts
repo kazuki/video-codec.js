@@ -74,7 +74,11 @@ class VPXEncoder {
         this.worker.onmessage = (e: MessageEvent) => {
             this._encode(e.data);
         };
-        this.worker.postMessage(<Packet&IResult>{status: 0, data: null});
+        this.worker.postMessage(<Packet&IResult>{
+            status: 0,
+            data: null,
+            frame_type: FrameType.Unknown
+        });
     }
 
     _encode(frame: VideoFrame) {
@@ -89,6 +93,7 @@ class VPXEncoder {
         }
         Module.setValue(this.iter, 0, 'i32');
         var data = null;
+        var ftype = FrameType.Unknown;
         while ((ret = _vpx_codec_get_cx_data(this.ctx, this.iter)) != 0) {
             if (data) {
                 // インタフェース的に未対応...
@@ -100,29 +105,42 @@ class VPXEncoder {
             if (pkt.kind == 0 /* VPX_CODEC_CX_FRAME_PKT */) {
                 data = new ArrayBuffer(pkt.data.byteLength);
                 new Uint8Array(data).set(pkt.data);
+                if ((pkt.flags & 1) == 1) {
+                    ftype = FrameType.Key;
+                }
             }
         }
         if (data) {
             this.worker.postMessage(<Packet&IResult>{
                 status: 0,
                 data: data,
+                frame_type: ftype,
             }, [data]);
         } else {
             this.worker.postMessage(<Packet&IResult>{
                 status: 0,
                 data: null,
+                frame_type: ftype,
             });
         }
     }
 
     _parse_pkt(pkt: number): any {
         var kind = Module.getValue(pkt, 'i32');
-        var ptr = Module.getValue(pkt + 8, 'i32');
-        var bytes = Module.getValue(pkt + 12, 'i32');
-        return {
-            kind: kind,
-            data: Module.HEAPU8.subarray(ptr, ptr + bytes),
-        };
+        if (kind == 0) {
+            var ptr = Module.getValue(pkt + 8, 'i32');
+            var bytes = Module.getValue(pkt + 12, 'i32');
+            return {
+                kind: kind,
+                data: Module.HEAPU8.subarray(ptr, ptr + bytes),
+                flags: Module.getValue(pkt + 28, 'i32'),
+                partition_id: Module.getValue(pkt + 32, 'i32'),
+            };
+        } else {
+            return {
+                kind: kind
+            };
+        }
     }
 
     _setup_config(encoder_config: number, cfg: any) {

@@ -2,6 +2,7 @@
 #include <cstddef>
 
 #include "../native/libvpx/vpx/vp8cx.h"
+#include "../native/libvpx/vpx/vpx_encoder.h"
 #include "../native/openh264/codec/api/svc/codec_app_def.h"
 
 int main() {
@@ -23,6 +24,16 @@ int main() {
     printf("  vpx_codec_enc_cfg_t::rc_target_bitrate: %d\n", offsetof(vpx_codec_enc_cfg_t, rc_target_bitrate));
     printf("  vpx_codec_enc_cfg_t::rc_buf_optimal_sz: %d\n", offsetof(vpx_codec_enc_cfg_t, rc_buf_optimal_sz));
     printf("  vpx_codec_enc_cfg_t::kf_mode: %d\n", offsetof(vpx_codec_enc_cfg_t, kf_mode));
+
+    vpx_codec_cx_pkt x;
+    printf("  vpx_codec_cx_pkt::data::frame: %d\n", (int)((uint64_t)(void*)&(x.data.frame) - (uint64_t)(void*)&x));
+    printf("  vpx_codec_cx_pkt::data::frame::buf: %d\n", (int)((uint64_t)(void*)&(x.data.frame.buf) - (uint64_t)(void*)&x));
+    printf("  vpx_codec_cx_pkt::data::frame::sz: %d\n", (int)((uint64_t)(void*)&(x.data.frame.sz) - (uint64_t)(void*)&x));
+    printf("  vpx_codec_cx_pkt::data::frame::pts: %d\n", (int)((uint64_t)(void*)&(x.data.frame.pts) - (uint64_t)(void*)&x));
+    printf("  vpx_codec_cx_pkt::data::frame::dur: %d\n", (int)((uint64_t)(void*)&(x.data.frame.duration) - (uint64_t)(void*)&x));
+    printf("  vpx_codec_cx_pkt::data::frame::flags: %d\n", (int)((uint64_t)(void*)&(x.data.frame.flags) - (uint64_t)(void*)&x));
+    printf("  vpx_codec_cx_pkt::data::frame::part_id: %d\n", (int)((uint64_t)(void*)&(x.data.frame.partition_id) - (uint64_t)(void*)&x));
+
     printf("openh264\n");
     printf("  SEncParamExt::iComplexityMode: %d\n", offsetof(SEncParamExt, iComplexityMode));
     printf("  SEncParamExt::iEntropyCodingModeFlag: %d\n", offsetof(SEncParamExt, iEntropyCodingModeFlag));

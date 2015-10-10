@@ -33,7 +33,10 @@ class MotionImageEncoder implements IEncoder {
             header[0] = MotionImageEncoder.MIME.indexOf(this._type);
             header[1] = cfg.width;
             header[2] = cfg.height;
-            resolve({data: header.buffer});
+            resolve({
+                data: header.buffer,
+                frame_type: FrameType.Unknown
+            });
         });
     }
 
@@ -46,7 +49,8 @@ class MotionImageEncoder implements IEncoder {
                     var reader = new FileReader();
                     reader.onload = () => {
                         resolve({
-                            data: reader.result
+                            data: reader.result,
+                            frame_type: FrameType.Key
                         });
                     };
                     reader.readAsArrayBuffer(blob);
@@ -61,7 +65,8 @@ class MotionImageEncoder implements IEncoder {
                 var reader = new FileReader();
                 reader.onload = () => {
                     resolve({
-                        data: reader.result
+                        data: reader.result,
+                        frame_type: FrameType.Key
                     });
                 };
                 reader.readAsArrayBuffer(blob);

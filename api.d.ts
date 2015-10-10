@@ -22,6 +22,15 @@ interface VideoFrame {
     transferable: boolean;
 }
 
+declare enum FrameType {
+    Key = 1,
+    IDR = 1,
+    I = 2,
+    P = 3,
+    B = 4,
+    Unknown = 255
+}
+
 interface ReadEventArgs extends VideoFrame {
     ended: boolean;
 }
@@ -39,6 +48,7 @@ interface IRenderer {
 
 interface Packet {
     data: ArrayBuffer;
+    frame_type: FrameType;
 }
 
 interface IResult {
