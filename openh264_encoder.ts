@@ -1,4 +1,4 @@
-/// <reference path="api.d.ts" />
+/// <reference path="api.ts" />
 /// <reference path="typings/emscripten.d.ts" />
 
 declare function _WelsCreateSVCEncoder(ptr: number): number;

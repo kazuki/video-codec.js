@@ -1,4 +1,4 @@
-/// <reference path="api.d.ts" />
+/// <reference path="api.ts" />
 /// <reference path="typings/emscripten.d.ts" />
 
 declare function _vpx_codec_vp8_cx(): number;
@@ -88,7 +88,8 @@ class VPXEncoder {
         var pts = Math.floor(frame.timestamp * 1000)|0;
         var ret = _vpx_codec_encode(this.ctx, this.img, pts, 0 /* pts_hi */, 1, 0, 1 /* VPX_DL_REALTIME(1) VPX_DL_GOOD_QUALITY(1000000) */);
         if (ret) {
-            this.worker.postMessage(<IResult>{status: -1});
+            this.worker.postMessage(<IResult>{status: -1,
+                                              reason: 'vpx_codec_encode returned error code ' + ret});
             return;
         }
         Module.setValue(this.iter, 0, 'i32');

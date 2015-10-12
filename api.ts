@@ -22,7 +22,7 @@ interface VideoFrame {
     transferable: boolean;
 }
 
-declare enum FrameType {
+enum FrameType {
     Key = 1,
     IDR = 1,
     I = 2,

@@ -1,4 +1,4 @@
-/// <reference path="api.d.ts" />
+/// <reference path="api.ts" />
 
 class Encoder implements IEncoder {
     worker: Worker;

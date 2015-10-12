@@ -25,7 +25,7 @@ $ make
 ## API
 
 エンコーダ／デコーダはWeb Workers上で動作します．
-通常は api.d.ts で定義している IEncoder/IDecoder インタフェースを実装した，
+通常は api.ts で定義している IEncoder/IDecoder インタフェースを実装した，
 Encoder/Decoderクラスを利用します (utils.tsで定義)．
 
 エンコーダ／デコーダの各メソッドは全てPromiseを返却します．
@@ -53,7 +53,7 @@ var encoder: IEncoder = new Encoder('openh264_encoder.js');
 #### 初期化
 
 エンコーダは初期化関数を一番最初に1度だけ呼び出す必要があります．
-api.d.ts で定義している EncoderConfig インタフェースに基づく設定情報を渡します．
+api.ts で定義している EncoderConfig インタフェースに基づく設定情報を渡します．
 
 setupではコーデックによってはヘッダ情報等を含むパケットを返却します．
 packet.dataがnullの場合は，ヘッダ情報等は特に必要のないコーデックです．
@@ -75,7 +75,7 @@ encoder.setup({
 #### エンコード
 
 YUV420(I420)形式のフレームをエンコードします．
-RGB等は受け付けないので，必ずYUV420(I420)に変換してから，api.d.tsで定義しているVideoFrameの形式で渡します．
+RGB等は受け付けないので，必ずYUV420(I420)に変換してから，api.tsで定義しているVideoFrameの形式で渡します．
 
 なお，VideoFrameのtransferableがtrueの場合は，Workerにメモリをムーブするので，
 呼び出し元では利用できなくなることを表します．

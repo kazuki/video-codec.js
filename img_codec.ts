@@ -1,4 +1,4 @@
-/// <reference path="api.d.ts" />
+/// <reference path="api.ts" />
 /// <reference path="typings/Canvas.d.ts" />
 
 class MotionImageEncoder implements IEncoder {
