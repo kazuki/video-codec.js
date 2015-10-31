@@ -16,6 +16,7 @@ daala_info* daala_info_create(int32_t width, int32_t height,
     di->timebase_numerator = timebase_num;
     di->timebase_denominator = timebase_den;
     di->frame_duration = 1;
+    di->bitdepth_mode = OD_BITDEPTH_MODE_8;
     di->nplanes = 3;
     di->plane_info[0].xdec = 0;
     di->plane_info[0].ydec = 0;
@@ -46,16 +47,19 @@ od_img *od_img_create(int32_t width, int32_t height)
         oi->planes[0].ydec = 0;
         oi->planes[0].xstride = 1;
         oi->planes[0].ystride = width;
-        oi->planes[1].data = (unsigned char*)malloc(width * height);
+        oi->planes[0].bitdepth = 8;
+        oi->planes[1].data = (unsigned char*)malloc(width * height / 2);
         oi->planes[1].xdec = 1;
         oi->planes[1].ydec = 1;
         oi->planes[1].xstride = 1;
         oi->planes[1].ystride = width / 2;
-        oi->planes[2].data = (unsigned char*)malloc(width * height);
+        oi->planes[1].bitdepth = 8;
+        oi->planes[2].data = (unsigned char*)malloc(width * height / 2);
         oi->planes[2].xdec = 1;
         oi->planes[2].ydec = 1;
         oi->planes[2].xstride = 1;
         oi->planes[2].ystride = width / 2;
+        oi->planes[2].bitdepth = 8;
     }
     return oi;
 }

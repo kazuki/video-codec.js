@@ -37,10 +37,10 @@ class DaalaEncoder {
         this.img_ptr = _od_img_create(cfg.width, cfg.height);
         this.y = Module.HEAPU8.subarray(Module.getValue(this.img_ptr, 'i32'),
                                         Module.getValue(this.img_ptr, 'i32') + cfg.width * cfg.height);
-        this.u = Module.HEAPU8.subarray(Module.getValue(this.img_ptr + 4 * 4, 'i32'),
-                                        Module.getValue(this.img_ptr + 4 * 4, 'i32') + cfg.width * cfg.height / 4);
-        this.v = Module.HEAPU8.subarray(Module.getValue(this.img_ptr + 4 * 8, 'i32'),
-                                        Module.getValue(this.img_ptr + 4 * 8, 'i32') + cfg.width * cfg.height / 4);
+        this.u = Module.HEAPU8.subarray(Module.getValue(this.img_ptr + 4 * 5, 'i32'),
+                                        Module.getValue(this.img_ptr + 4 * 5, 'i32') + cfg.width * cfg.height / 4);
+        this.v = Module.HEAPU8.subarray(Module.getValue(this.img_ptr + 4 * 10, 'i32'),
+                                        Module.getValue(this.img_ptr + 4 * 10, 'i32') + cfg.width * cfg.height / 4);
         this.encoder = _daala_encode_create(di);
         if (this.encoder == 0) {
             this.worker.postMessage(<IResult>{status: -1});

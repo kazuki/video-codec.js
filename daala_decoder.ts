@@ -7,7 +7,7 @@ declare function _daala_info_create(width: number, height: number,
                                     keyframe_rate: number): number;
 declare function _daala_comment_create(): number;
 declare function _daala_decode_header_in(di: number, dc: number, ds: number, op: number): number;
-declare function _daala_decode_alloc(di: number, ds: number): number;
+declare function _daala_decode_create(di: number, ds: number): number;
 declare function _daala_decode_packet_in(decoder: number, img: number, op: number): number;
 declare function _daala_setup_free(ds: number): void;
 declare function _od_img_create(width: number, height: number): number;
@@ -55,7 +55,7 @@ class DaalaDecoder {
             return;
         }
 
-        this.decoder = _daala_decode_alloc(di, Module.getValue(ds, 'i32'));
+        this.decoder = _daala_decode_create(di, Module.getValue(ds, 'i32'));
         _daala_setup_free(Module.getValue(ds, 'i32'));
         Module._free(ds);
         if (this.decoder == 0) {
@@ -79,17 +79,19 @@ class DaalaDecoder {
     }
 
     _od_img_to_video_frame(): VideoFrame&IResult {
-        var width = Module.getValue(this.img + 4 * 4 * 4 + 4, 'i32');
-        var height = Module.getValue(this.img + 4 * 4 * 4 + 8, 'i32');
-        var y_stride = Module.getValue(this.img + 12, 'i32');
-        var u_stride = Module.getValue(this.img + 4 * 4 + 12, 'i32');
-        var v_stride = Module.getValue(this.img + 4 * 8 + 12, 'i32');
-        var y = Module.HEAPU8.subarray(Module.getValue(this.img, 'i32'),
-                                       Module.getValue(this.img, 'i32') + height * y_stride);
-        var u = Module.HEAPU8.subarray(Module.getValue(this.img + 4 * 4, 'i32'),
-                                       Module.getValue(this.img + 4 * 4, 'i32') + height / 2 * u_stride);
-        var v = Module.HEAPU8.subarray(Module.getValue(this.img + 4 * 8, 'i32'),
-                                       Module.getValue(this.img + 4 * 8, 'i32') + height / 2 * v_stride);
+        var size_of_od_img_plane = 4 * 5;
+        var od_img_nplanes_offset = size_of_od_img_plane * 4;
+        var width = Module.getValue(this.img + od_img_nplanes_offset + 4, 'i32');
+        var height = Module.getValue(this.img + od_img_nplanes_offset + 8, 'i32');
+        var y_data   = Module.getValue(this.img + size_of_od_img_plane * 0,      'i32');
+        var y_stride = Module.getValue(this.img + size_of_od_img_plane * 0 + 12, 'i32');
+        var u_data   = Module.getValue(this.img + size_of_od_img_plane * 1,      'i32');
+        var u_stride = Module.getValue(this.img + size_of_od_img_plane * 1 + 12, 'i32');
+        var v_data   = Module.getValue(this.img + size_of_od_img_plane * 2,      'i32');
+        var v_stride = Module.getValue(this.img + size_of_od_img_plane * 2 + 12, 'i32');
+        var y = Module.HEAPU8.subarray(y_data, y_data + height * y_stride);
+        var u = Module.HEAPU8.subarray(u_data, u_data + height / 2 * u_stride);
+        var v = Module.HEAPU8.subarray(v_data, v_data + height / 2 * v_stride);
         var out = new ArrayBuffer(width * height * 1.5);
         var out_y = new Uint8Array(out, 0, width * height);
         var out_u = new Uint8Array(out, width * height, width * height / 4);
