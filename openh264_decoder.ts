@@ -1,4 +1,4 @@
-/// <reference path="api.d.ts" />
+/// <reference path="api.ts" />
 /// <reference path="typings/emscripten.d.ts" />
 
 declare function _WelsCreateDecoder(ptr: number): number;
@@ -47,7 +47,7 @@ class OpenH264Decoder {
         this.worker.onmessage = (e: MessageEvent) => {
             this._decode(e.data.data);
         };
-        this.worker.postMessage({status: 0});
+        this.worker.postMessage(<IResult>{status: 0});
     }
 
     _decode(data: ArrayBuffer) {
@@ -57,15 +57,15 @@ class OpenH264Decoder {
         var ret = _WelsDecoderDecodeFrame(this.decoder, this.buf_ptr, data.byteLength,
                                           this.out_ptr, this.sbi_ptr);
         if (ret != 0) {
-            this.worker.postMessage({
-                status: ret
-            });
+            this.worker.postMessage(<IResult>{status: ret});
             return;
         }
         var sbi = this._parse_sbuffer_info();
         if (sbi.buffer_status == 0) {
-            this.worker.postMessage({
+            this.worker.postMessage(<VideoFrame&IResult>{
                 status: 0,
+                width: 0,
+                height: 0,
                 data: null,
                 y: null,
                 u: null,
@@ -89,9 +89,11 @@ class OpenH264Decoder {
             out_u.set(in_u.subarray(y * sbi.strides[1], y * sbi.strides[1] + sbi.width / 2), y * sbi.width / 2);
             out_v.set(in_v.subarray(y * sbi.strides[1], y * sbi.strides[1] + sbi.width / 2), y * sbi.width / 2);
         }
-        this.worker.postMessage({
+        this.worker.postMessage(<VideoFrame&IResult>{
             status: 0,
             timestamp: sbi.output_yuv_timestamp,
+            width: sbi.width,
+            height: sbi.height,
             data: buf,
             y: new Uint8ClampedArray(out_y.buffer, out_y.byteOffset, out_y.byteLength),
             u: new Uint8ClampedArray(out_u.buffer, out_u.byteOffset, out_u.byteLength),

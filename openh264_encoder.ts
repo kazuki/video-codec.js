@@ -1,4 +1,4 @@
-/// <reference path="api.d.ts" />
+/// <reference path="api.ts" />
 /// <reference path="typings/emscripten.d.ts" />
 
 declare function _WelsCreateSVCEncoder(ptr: number): number;
@@ -88,7 +88,7 @@ class OpenH264Encoder {
         this.pic = Module._malloc(_SizeOfSSourcePicture());
         this.bsi = Module._malloc(_SizeOfSFrameBSInfo());
         _SetupSSourcePicture(this.pic, vi.width, vi.height, this.i420);
-        this.worker.postMessage({
+        this.worker.postMessage(<Packet&IResult>{
             status: ret,
             data: null,
         });
@@ -103,9 +103,7 @@ class OpenH264Encoder {
         }
         var ret = _WelsSVCEncoderEncodeFrame(this.encoder, this.pic, this.bsi);
         if (ret != 0) {
-            this.worker.postMessage({
-                status: ret
-            });
+            this.worker.postMessage(<IResult>{status: ret});
             return;
         }
         ++this.num_of_frames;
@@ -119,9 +117,10 @@ class OpenH264Encoder {
             size += info.layers[i].bitstream.length;
         }
         if (size == 0) {
-            this.worker.postMessage({
+            this.worker.postMessage(<Packet&IResult>{
                 status: 0,
                 data: null,
+                frame_type: FrameType.Unknown
             });
         } else {
             var tmp = new Uint8Array(size);
@@ -130,9 +129,18 @@ class OpenH264Encoder {
                 tmp.set(info.layers[i].bitstream, off);
                 off += info.layers[i].bitstream.length;
             }
-            this.worker.postMessage({
+            var ftype = FrameType.Unknown;
+            if (info.frameType == 1) {
+                ftype = FrameType.IDR;
+            } else if (info.frameType == 2) {
+                ftype = FrameType.I;
+            } else if (info.frameType == 3) {
+                ftype = FrameType.P;
+            }
+            this.worker.postMessage(<Packet&IResult>{
                 status: 0,
                 data: tmp.buffer,
+                frame_type: ftype
             }, [tmp.buffer]);
         }
     }

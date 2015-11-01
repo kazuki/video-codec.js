@@ -1,4 +1,14 @@
-/// <reference path="api.d.ts" />
+/// <reference path="typings/es6-promise.d.ts" />
+var FrameType;
+(function (FrameType) {
+    FrameType[FrameType["Key"] = 1] = "Key";
+    FrameType[FrameType["IDR"] = 1] = "IDR";
+    FrameType[FrameType["I"] = 2] = "I";
+    FrameType[FrameType["P"] = 3] = "P";
+    FrameType[FrameType["B"] = 4] = "B";
+    FrameType[FrameType["Unknown"] = 255] = "Unknown";
+})(FrameType || (FrameType = {}));
+/// <reference path="api.ts" />
 var Encoder = (function () {
     function Encoder(worker_script_path) {
         this.worker = new Worker(worker_script_path);
@@ -75,7 +85,7 @@ var Decoder = (function () {
     };
     return Decoder;
 })();
-/// <reference path="api.d.ts" />
+/// <reference path="api.ts" />
 /// <reference path="typings/MediaStream.d.ts" />
 var Camera = (function () {
     function Camera() {
@@ -193,6 +203,8 @@ var Camera = (function () {
             resolve({
                 timestamp: timestamp,
                 ended: false,
+                width: _this._width,
+                height: _this._height,
                 data: _this._buf,
                 y: _this._y,
                 u: _this._u,
@@ -205,7 +217,7 @@ var Camera = (function () {
     };
     return Camera;
 })();
-/// <reference path="api.d.ts" />
+/// <reference path="api.ts" />
 var Renderer = (function () {
     function Renderer(canvas) {
         this._canvas = canvas;
@@ -264,7 +276,7 @@ var Renderer = (function () {
     };
     return Renderer;
 })();
-/// <reference path="api.d.ts" />
+/// <reference path="api.ts" />
 /// <reference path="typings/Canvas.d.ts" />
 var MotionImageEncoder = (function () {
     function MotionImageEncoder() {
@@ -290,7 +302,10 @@ var MotionImageEncoder = (function () {
             header[0] = MotionImageEncoder.MIME.indexOf(_this._type);
             header[1] = cfg.width;
             header[2] = cfg.height;
-            resolve({ data: header.buffer });
+            resolve({
+                data: header.buffer,
+                frame_type: FrameType.Unknown
+            });
         });
     };
     MotionImageEncoder.prototype.encode = function (frame) {
@@ -303,7 +318,8 @@ var MotionImageEncoder = (function () {
                     var reader = new FileReader();
                     reader.onload = function () {
                         resolve({
-                            data: reader.result
+                            data: reader.result,
+                            frame_type: FrameType.Key
                         });
                     };
                     reader.readAsArrayBuffer(blob);
@@ -319,7 +335,8 @@ var MotionImageEncoder = (function () {
                 var reader = new FileReader();
                 reader.onload = function () {
                     resolve({
-                        data: reader.result
+                        data: reader.result,
+                        frame_type: FrameType.Key
                     });
                 };
                 reader.readAsArrayBuffer(blob);
@@ -401,7 +418,8 @@ var MotionImageDecoder = (function () {
                 _this._convert(_this._context.getImageData(0, 0, _this._w, _this._h));
                 resolve({
                     timestamp: 0,
-                    ended: false,
+                    width: _this._w,
+                    height: _this._h,
                     data: _this._buf,
                     y: _this._y,
                     u: _this._u,
@@ -436,7 +454,7 @@ var MotionImageDecoder = (function () {
     };
     return MotionImageDecoder;
 })();
-/// <reference path="api.d.ts" />
+/// <reference path="api.ts" />
 /// <reference path="utils.ts" />
 /// <reference path="camera.ts" />
 /// <reference path="renderer.ts" />

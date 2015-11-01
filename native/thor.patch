@@ -1,52 +1,13 @@
-commit 136fb23d432322978012e9b3198f50b9195ecc2e
-Author: Kazuki Oikawa <k@oikw.org>
-Date:   Mon Jul 27 20:35:12 2015 +0900
-
-    Fix compile error when use SIMD C emulation mode
-
-diff --git a/common/common_kernels.c b/common/common_kernels.c
-index 04f43be..b5e1307 100644
---- a/common/common_kernels.c
-+++ b/common/common_kernels.c
-@@ -194,13 +194,13 @@ static void get_inter_prediction_luma_inner(int width, int height, int xoff, int
- 
-     for (int y = 0; y < height; y++) {
-       int res;
--      v128 ax = v128_unpacklo_u8_s16(v64_load_unaligned(ip - 2));
--      v128 a0 = v128_mullo_s16(c0, v128_unpacklo_u8_s16(v64_load_unaligned(ip - 2 * istride - 2)));
--      v128 a1 = v128_mullo_s16(c1, v128_unpacklo_u8_s16(v64_load_unaligned(ip - 1 * istride - 2)));
-+      v128 ax = v128_unpack_u8_s16(v64_load_unaligned(ip - 2));
-+      v128 a0 = v128_mullo_s16(c0, v128_unpack_u8_s16(v64_load_unaligned(ip - 2 * istride - 2)));
-+      v128 a1 = v128_mullo_s16(c1, v128_unpack_u8_s16(v64_load_unaligned(ip - 1 * istride - 2)));
-       v128 a2 = v128_mullo_s16(c2, ax);
--      v128 a3 = v128_mullo_s16(c3, v128_unpacklo_u8_s16(v64_load_unaligned(ip + 1 * istride - 2)));
--      v128 a4 = v128_mullo_s16(c4, v128_unpacklo_u8_s16(v64_load_unaligned(ip + 2 * istride - 2)));
--      v128 a5 = v128_mullo_s16(c5, v128_unpacklo_u8_s16(v64_load_unaligned(ip + 3 * istride - 2)));
-+      v128 a3 = v128_mullo_s16(c3, v128_unpack_u8_s16(v64_load_unaligned(ip + 1 * istride - 2)));
-+      v128 a4 = v128_mullo_s16(c4, v128_unpack_u8_s16(v64_load_unaligned(ip + 2 * istride - 2)));
-+      v128 a5 = v128_mullo_s16(c5, v128_unpack_u8_s16(v64_load_unaligned(ip + 3 * istride - 2)));
- 
-       for (int x = 0; x < 3; x++) {
-         res = (v128_dotp_s16(c, v128_add_16(v128_add_16(v128_add_16(v128_add_16(v128_add_16(a0, a1), a2), a3), a4), a5)) + v128_dotp_s16(c, ax) * 128 + 8192) >> 14;
-@@ -315,7 +315,7 @@ static void get_inter_prediction_luma_centre(int width, int height,
-                                              const uint8_t *restrict ip, int istride)
- {
-   if (width == 4) {
--    v128 round = v128_dup_16(8);
-+    v64 round = v64_dup_16(8);
-     for (int i = 0; i < height; i++) {
-       v64 r, s;
-       r = v64_add_16(v64_unpacklo_u8_s16(v64_from_32(0, u32_load_unaligned(ip - 1 * istride + 0))),
-diff --git a/Makefile b/Makefile
-index 5ca91df..6291a4b 100644
---- a/Makefile
-+++ b/Makefile
+diff --git a/common/temporal_interp.c b/common/temporal_interp.c
+index c01747c..1209f38 100644
+--- a/common/temporal_interp.c
++++ b/common/temporal_interp.c
 @@ -1,7 +1,7 @@
- ENCODER_PROGRAM = build/Thorenc
- DECODER_PROGRAM = build/Thordec
- 
--CFLAGS += -std=c99 -g -O6 -Wall -pedantic -I common
-+CFLAGS += -std=c99 -g -O2 -Wall -pedantic -I common
- LDFLAGS = -lm
- 
- ifeq ($(ARCH),neon)
+ #include <math.h>
+ #include <assert.h>
+ #include <string.h>
+-#include "emmintrin.h"
++//#include "emmintrin.h"
+ #include "simd.h"
+ #include "global.h"
+ #include "temporal_interp.h"

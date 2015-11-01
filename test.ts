@@ -1,4 +1,4 @@
-/// <reference path="api.d.ts" />
+/// <reference path="api.ts" />
 /// <reference path="utils.ts" />
 /// <reference path="camera.ts" />
 /// <reference path="renderer.ts" />

@@ -1,5 +1,4 @@
 /// <reference path="typings/es6-promise.d.ts" />
-/// <reference path="typings/es6-Uint8ClampedArray.d.ts" />
 
 interface VideoInfo {
     width: number;
@@ -14,11 +13,22 @@ interface EncoderConfig extends VideoInfo {
 
 interface VideoFrame {
     timestamp: number;
+    width: number;
+    height: number;
     data: ArrayBuffer;
     y: Uint8ClampedArray;
     u: Uint8ClampedArray;
     v: Uint8ClampedArray;
     transferable: boolean;
+}
+
+enum FrameType {
+    Key = 1,
+    IDR = 1,
+    I = 2,
+    P = 3,
+    B = 4,
+    Unknown = 255
 }
 
 interface ReadEventArgs extends VideoFrame {
@@ -38,6 +48,12 @@ interface IRenderer {
 
 interface Packet {
     data: ArrayBuffer;
+    frame_type: FrameType;
+}
+
+interface IResult {
+    status: number,
+    reason?: string,
 }
 
 interface IEncoder {

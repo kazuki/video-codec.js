@@ -1,4 +1,4 @@
-/// <reference path="api.d.ts" />
+/// <reference path="api.ts" />
 /// <reference path="typings/emscripten.d.ts" />
 class libde265Decoder {
     worker: Worker;
@@ -14,11 +14,14 @@ class libde265Decoder {
         this.worker.onmessage = (e: MessageEvent) => {
             this._decode(e.data);
         };
-        this.worker.postMessage({status: 0});
+        this.worker.postMessage(<IResult>{status: 0});
     }
 
     _decode(packet: Packet) {
-        this.worker.postMessage({status: 0, data: null, y: null, u: null, v: null});
+        this.worker.postMessage(<VideoFrame&IResult>{
+            timestamp: 0, width: null, height: null,
+            status: 0, data: null, y: null, u: null, v: null
+        });
     }
 }
 new libde265Decoder(this);

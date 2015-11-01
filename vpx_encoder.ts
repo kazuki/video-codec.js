@@ -1,4 +1,4 @@
-/// <reference path="api.d.ts" />
+/// <reference path="api.ts" />
 /// <reference path="typings/emscripten.d.ts" />
 
 declare function _vpx_codec_vp8_cx(): number;
@@ -43,7 +43,7 @@ class VPXEncoder {
         this._setup_config(config, cfg);
         this.ctx = _allocate_vpx_codec_ctx();
         if (_vpx_codec_enc_init2(this.ctx, this.iface, config, 0)) {
-            this.worker.postMessage({status: -1});
+            this.worker.postMessage(<IResult>{status: -1});
             return;
         }
 
@@ -56,7 +56,7 @@ class VPXEncoder {
             if (key in cfg) {
                 Module.setValue(value, cfg[key], 'i32');
                 if (_vpx_codec_control_(this.ctx, int_configs[key], value) != 0) {
-                    this.worker.postMessage({status: -2});
+                    this.worker.postMessage(<IResult>{status: -2});
                     return;
                 }
             }
@@ -74,7 +74,11 @@ class VPXEncoder {
         this.worker.onmessage = (e: MessageEvent) => {
             this._encode(e.data);
         };
-        this.worker.postMessage({status: 0, data: null});
+        this.worker.postMessage(<Packet&IResult>{
+            status: 0,
+            data: null,
+            frame_type: FrameType.Unknown
+        });
     }
 
     _encode(frame: VideoFrame) {
@@ -84,45 +88,60 @@ class VPXEncoder {
         var pts = Math.floor(frame.timestamp * 1000)|0;
         var ret = _vpx_codec_encode(this.ctx, this.img, pts, 0 /* pts_hi */, 1, 0, 1 /* VPX_DL_REALTIME(1) VPX_DL_GOOD_QUALITY(1000000) */);
         if (ret) {
-            this.worker.postMessage({status: -1});
+            this.worker.postMessage(<IResult>{status: -1,
+                                              reason: 'vpx_codec_encode returned error code ' + ret});
             return;
         }
         Module.setValue(this.iter, 0, 'i32');
         var data = null;
+        var ftype = FrameType.Unknown;
         while ((ret = _vpx_codec_get_cx_data(this.ctx, this.iter)) != 0) {
             if (data) {
                 // インタフェース的に未対応...
-                this.worker.postMessage({status: -1,
-                                         reason: 'not implemented (I/F limitation)'});
+                this.worker.postMessage(<IResult>{status: -1,
+                                                  reason: 'not implemented (I/F limitation)'});
                 return;
             }
             var pkt = this._parse_pkt(ret);
             if (pkt.kind == 0 /* VPX_CODEC_CX_FRAME_PKT */) {
                 data = new ArrayBuffer(pkt.data.byteLength);
                 new Uint8Array(data).set(pkt.data);
+                if ((pkt.flags & 1) == 1) {
+                    ftype = FrameType.Key;
+                }
             }
         }
         if (data) {
-            this.worker.postMessage({
+            this.worker.postMessage(<Packet&IResult>{
                 status: 0,
                 data: data,
+                frame_type: ftype,
             }, [data]);
         } else {
-            this.worker.postMessage({
+            this.worker.postMessage(<Packet&IResult>{
                 status: 0,
                 data: null,
+                frame_type: ftype,
             });
         }
     }
 
     _parse_pkt(pkt: number): any {
         var kind = Module.getValue(pkt, 'i32');
-        var ptr = Module.getValue(pkt + 8, 'i32');
-        var bytes = Module.getValue(pkt + 12, 'i32');
-        return {
-            kind: kind,
-            data: Module.HEAPU8.subarray(ptr, ptr + bytes),
-        };
+        if (kind == 0) {
+            var ptr = Module.getValue(pkt + 8, 'i32');
+            var bytes = Module.getValue(pkt + 12, 'i32');
+            return {
+                kind: kind,
+                data: Module.HEAPU8.subarray(ptr, ptr + bytes),
+                flags: Module.getValue(pkt + 28, 'i32'),
+                partition_id: Module.getValue(pkt + 32, 'i32'),
+            };
+        } else {
+            return {
+                kind: kind
+            };
+        }
     }
 
     _setup_config(encoder_config: number, cfg: any) {

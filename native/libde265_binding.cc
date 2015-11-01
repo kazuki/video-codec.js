@@ -5,16 +5,16 @@ extern "C" {
 
 void libde265_encoder_hack(encoder_context *ctx, int w, int h)
 {
-    ctx->sps.set_defaults();
-    ctx->sps.set_resolution(w, h);
-    ctx->sps.compute_derived_values();
+    //ctx->sps.set_defaults();
+    //ctx->sps.set_resolution(w, h);
+    //ctx->sps.compute_derived_values();
 }
 
 de265_image *libde265_image_allocate(encoder_context *ctx, int w, int h)
 {
     de265_image *img = new de265_image;
-    img->alloc_image(w, h, de265_chroma_420, &ctx->sps, false,
-                     NULL, ctx, 0, NULL, false);
+    //img->alloc_image(w, h, de265_chroma_420, &ctx->sps, false,
+    //NULL, ctx, 0, NULL, false);
     return img;
 }
 
