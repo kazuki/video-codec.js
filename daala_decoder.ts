@@ -8,7 +8,8 @@ declare function _daala_info_create(width: number, height: number,
 declare function _daala_comment_create(): number;
 declare function _daala_decode_header_in(di: number, dc: number, ds: number, op: number): number;
 declare function _daala_decode_create(di: number, ds: number): number;
-declare function _daala_decode_packet_in(decoder: number, img: number, op: number): number;
+declare function _daala_decode_packet_in(decoder: number, op: number): number;
+declare function _daala_decode_img_out(decoder: number, img: number): number;
 declare function _daala_setup_free(ds: number): void;
 declare function _od_img_create(width: number, height: number): number;
 
@@ -70,12 +71,23 @@ class DaalaDecoder {
 
     _decode(data: ArrayBuffer) {
         this._parse_ogg_packet(new Uint8Array(data));
-        if (_daala_decode_packet_in(this.decoder, this.img, this.op) != 0) {
+        if (_daala_decode_packet_in(this.decoder, this.op) != 0) {
             this.worker.postMessage(<IResult>{status: -1});
             return;
         }
-        var frame = this._od_img_to_video_frame();
-        this.worker.postMessage(frame, [frame.data]);
+        var ret = _daala_decode_img_out(this.decoder, this.img);
+        if (ret < 0) {
+            this.worker.postMessage(<IResult>{status: -1});
+            return;
+        }
+        if (ret == 1) {
+            var frame = this._od_img_to_video_frame();
+            this.worker.postMessage(frame, [frame.data]);
+        } else {
+            console.log('not supported');
+            this.worker.postMessage(<IResult>{status: -2});
+            return;
+        }
     }
 
     _od_img_to_video_frame(): VideoFrame&IResult {

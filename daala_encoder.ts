@@ -8,7 +8,7 @@ declare function _daala_info_create(width: number, height: number,
                                     timebase_num: number, timebase_den: number, keyframe_rate: number): number;
 declare function _daala_comment_create(): number;
 declare function _daala_encode_flush_header(encoder: number, daala_comment: number, ogg_packet: number): number;
-declare function _daala_encode_img_in(encoder: number, img: number, duration: number): number;
+declare function _daala_encode_img_in(encoder: number, img: number, duration: number, last_frame: number, input_frames_left_encoder_buffer: number): number;
 declare function _daala_encode_packet_out(encoder: number, last: number, ogg_packet: number): number;
 declare function _od_img_create(width: number, height: number): number;
 
@@ -20,6 +20,7 @@ class DaalaEncoder {
     y: Uint8Array;
     u: Uint8Array;
     v: Uint8Array;
+    flag_ptr: number;
 
     constructor(worker: Worker) {
         this.worker = worker;
@@ -98,6 +99,7 @@ class DaalaEncoder {
             view8.set(new Uint8Array(packets[i]), off);
             off += packets[i].byteLength;
         }
+        this.flag_ptr = Module._malloc(4);
         this.worker.postMessage(<Packet&IResult>{
             status: 0,
             data: data,
@@ -109,7 +111,7 @@ class DaalaEncoder {
         this.y.set(new Uint8Array(frame.y.buffer, frame.y.byteOffset, frame.y.byteLength), 0);
         this.u.set(new Uint8Array(frame.u.buffer, frame.u.byteOffset, frame.u.byteLength), 0);
         this.v.set(new Uint8Array(frame.v.buffer, frame.v.byteOffset, frame.v.byteLength), 0);
-        var ret = _daala_encode_img_in(this.encoder, this.img_ptr, 0);
+        var ret = _daala_encode_img_in(this.encoder, this.img_ptr, 0, 0, this.flag_ptr);
         if (ret != 0) {
             this.worker.postMessage(<IResult>{status: -1});
             return;
