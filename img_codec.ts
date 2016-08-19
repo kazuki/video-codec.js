@@ -42,7 +42,7 @@ class MotionImageEncoder implements IEncoder {
 
     encode(frame: VideoFrame): Promise<Packet> {
         return new Promise<Packet>((resolve, reject) => {
-            this._convert(frame, this._data.width, this._data.height, this._data.data);
+            this._convert(frame, this._data.width, this._data.height, Array.prototype.slice.call(this._data.data));
             this._context.putImageData(this._data, 0, 0);
             if (this._canvas.toBlob) {
                 this._canvas.toBlob((blob: Blob) => {
