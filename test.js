@@ -103,7 +103,7 @@ var Camera = (function () {
                 _this._sec_per_frame = 1 / _this._fps;
                 _this._first_timestamp = _this._prev_frame_index = -1;
                 _this._video = document.createElement('video');
-                _this._video.src = URL.createObjectURL(strm);
+                _this._video.srcObject = strm;
                 _this._video.play();
                 _this._video.addEventListener('loadedmetadata', function (e) {
                     var w = _this._width = _this._video.videoWidth;
